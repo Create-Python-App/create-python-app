@@ -13,20 +13,31 @@ Configure secrets under **Settings → Secrets and variables → Actions**.
 
 ## PyPI Trusted Publishing
 
-Configure **two** pending Trusted Publishers on PyPI (same workflow publishes both packages):
+The Release job uses the GitHub Actions environment **`pypi`**
+(Settings → Environments). Configure **two** pending Trusted Publishers on PyPI
+(same workflow publishes both packages):
 
 ### `create-python-app-core`
 
-1. Owner: `Create-Python-App`
-2. Repository: `create-python-app`
-3. Workflow: `publish.yml`
-4. Environment: (leave empty unless you use one)
+| Field | Value |
+|-------|--------|
+| PyPI Project Name | `create-python-app-core` |
+| Owner | `Create-Python-App` |
+| Repository name | `create-python-app` |
+| Workflow name | `publish.yml` |
+| Environment name | `pypi` |
 
 ### `create-awesome-python-app`
 
-Same owner/repo/workflow as above.
+| Field | Value |
+|-------|--------|
+| PyPI Project Name | `create-awesome-python-app` |
+| Owner | `Create-Python-App` |
+| Repository name | `create-python-app` |
+| Workflow name | `publish.yml` |
+| Environment name | `pypi` |
 
-On the first tag `create-awesome-python-app@0.1.0`, OIDC creates the projects and uploads sdists/wheels for both packages.
+On the first successful publish for tag `create-awesome-python-app@0.1.0`, OIDC creates the projects and uploads sdists/wheels for both packages.
 
 ## Cutting a release
 
