@@ -15,3 +15,7 @@ Secrets and publishers (see also #58–#63):
 2. Repository: `Create-Python-App/create-python-app`
 3. Workflow: `publish.yml`
 4. No `PYPI_TOKEN` secret required when using OIDC
+
+## AUR
+
+Track sibling repo `Create-Python-App/aur-package` when ready. Secrets: `AUR_SSH_PRIVATE_KEY`, `AUR_REPO_TOKEN`.
