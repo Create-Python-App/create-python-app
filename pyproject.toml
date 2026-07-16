@@ -19,6 +19,7 @@ dev = [
     "pyright>=1.1.400",
     "pre-commit>=4.0.0",
     "pytest-cov>=6.0.0",
+    "pytest-asyncio>=0.25.0",
     "pytest>=8.0.0",
 ]
 
@@ -44,6 +45,7 @@ venv = ".venv"
 
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 testpaths = ["packages"]
 pythonpath = ["packages/create-python-app-core/src", "packages/create-awesome-python-app/src"]
 

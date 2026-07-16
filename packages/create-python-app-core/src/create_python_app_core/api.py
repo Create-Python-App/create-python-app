@@ -35,8 +35,20 @@ def check_python_version(required: str, package_name: str) -> None:
 
 async def check_for_latest_version(package_name: str) -> str | None:
     """Fetch latest version from PyPI. Returns None on failure."""
-    _ = package_name
-    return None
+    import httpx
+
+    url = f"https://pypi.org/pypi/{package_name}/json"
+    try:
+        async with httpx.AsyncClient(
+            headers={"User-Agent": CPA_USER_AGENT},
+            timeout=10.0,
+        ) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+            return str(data["info"]["version"])
+    except Exception:
+        return None
 
 
 def print_env_info() -> None:
