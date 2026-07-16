@@ -1,0 +1,18 @@
+name: Notify Homebrew tap
+on:
+  push:
+    tags:
+      - "create-awesome-python-app@*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version"
+        required: true
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch to homebrew-tap
+        run: |
+          echo "Send repository_dispatch to Create-Python-App/homebrew-tap when it exists"
+          echo "Secret: HOMEBREW_TAP_TOKEN"
