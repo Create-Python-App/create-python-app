@@ -128,11 +128,11 @@ Layout:
 ```text
 ~/.cache/cpa/
   catalog/
-     templates.json
+    templates.json
   repos/
-     <cache-key>/
-       .cpa-cache.json
-       ...
+    <cache-key>/
+      .cpa-cache.json
+      ...
 ```
 
 If a scaffold "looks weird" and you suspect a stale cache, the first diagnostic
