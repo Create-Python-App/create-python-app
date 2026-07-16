@@ -32,4 +32,6 @@ jobs:
           files: dist/*
       - name: Publish to PyPI (OIDC)
         if: startsWith(github.ref, 'refs/tags/')
-        run: echo "PyPI trusted publishing wired in #58 — placeholder job"
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
