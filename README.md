@@ -25,6 +25,18 @@ create-python-app/          # virtual workspace root (no [project] table)
 uv sync
 ```
 
+
+## Python version
+
+- **Pin file:** `.python-version` → `3.12`
+- **Constraint:** every workspace member sets `requires-python = ">=3.12"`
+- **CI:** workflows (Epic 6 / #45) must install Python 3.12+ matching this pin
+
+```bash
+uv python install  # respects .python-version when needed
+uv sync
+```
+
 ### Reference
 
 - [uv workspaces handbook](https://pydevtools.com/handbook/how-to/how-to-set-up-a-python-monorepo-with-uv-workspaces/)

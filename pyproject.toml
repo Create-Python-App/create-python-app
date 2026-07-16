@@ -1,5 +1,12 @@
 # Virtual workspace root — not a publishable package.
 # See: https://pydevtools.com/handbook/how-to/how-to-set-up-a-python-monorepo-with-uv-workspaces/
+#
+# Python pin: .python-version + requires-python on every member (>=3.12).
+# CI must use the same minor (document when workflows land — Epic 6).
 
 [tool.uv.workspace]
 members = ["packages/*"]
+
+[tool.uv]
+# Prefer the pinned interpreter from .python-version when creating the venv.
+python-preference = "managed"
