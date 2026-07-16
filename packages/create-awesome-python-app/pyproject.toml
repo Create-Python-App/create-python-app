@@ -2,10 +2,14 @@
 name = "create-awesome-python-app"
 version = "0.0.0"
 description = "Composable scaffolding CLI for production-ready Python apps (stub)"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "create-python-app-core",
 ]
+
+[project.scripts]
+create-awesome-python-app = "create_awesome_python_app.cli:main"
 
 [tool.uv.sources]
 create-python-app-core = { workspace = true }
