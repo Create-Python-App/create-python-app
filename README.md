@@ -9,7 +9,20 @@
 
 Composable scaffolding CLI for production-ready Python apps.
 
-> **Status:** bootstrapping complete. Roadmap: [#1](https://github.com/Create-Python-App/create-python-app/issues/1).
+> **Status:** CLI monorepo bootstrapped. Template bank: [`cpa-templates`](https://github.com/Create-Python-App/cpa-templates). Roadmap: [#1](https://github.com/Create-Python-App/create-python-app/issues/1).
+
+## Ecosystem
+
+| Repository | Role |
+|------------|------|
+| [create-python-app](https://github.com/Create-Python-App/create-python-app) (this repo) | CLI (`create-awesome-python-app`) and scaffolding engine (`create-python-app-core`) |
+| [cpa-templates](https://github.com/Create-Python-App/cpa-templates) | Official templates and extensions (`templates.json` catalog) |
+
+The CLI fetches the catalog from:
+
+`https://raw.githubusercontent.com/Create-Python-App/cpa-templates/main/templates.json`
+
+Override with `CPA_CATALOG_URL` for forks or local testing (`file://` supported).
 
 ## Install (preview)
 
@@ -86,4 +99,5 @@ docker run --rm create-awesome-python-app --help
 ### Reference
 
 - [uv workspaces handbook](https://pydevtools.com/handbook/how-to/how-to-set-up-a-python-monorepo-with-uv-workspaces/)
-- Node parity: [Create-Node-App/create-node-app](https://github.com/Create-Node-App/create-node-app)
+- [cpa-templates](https://github.com/Create-Python-App/cpa-templates) — template and extension bank
+- Node parity: [Create-Node-App/create-node-app](https://github.com/Create-Node-App/create-node-app) + [cna-templates](https://github.com/Create-Node-App/cna-templates)
