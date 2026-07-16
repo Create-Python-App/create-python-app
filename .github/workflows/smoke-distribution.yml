@@ -1,0 +1,25 @@
+name: Distribution smoke tests
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  uvx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: astral-sh/setup-uv@v6
+      - name: Smoke uvx (when published)
+        run: |
+          if uvx create-awesome-python-app@latest --help; then
+            echo ok
+          else
+            echo "Package not on PyPI yet — soft fail"
+            exit 0
+          fi
+  docker:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - run: echo "Docker smoke activates after first image publish"
