@@ -10,7 +10,7 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: google/osv-scanner/actions/scanner@v2
         with:
           scan-args: |-

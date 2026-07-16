@@ -9,9 +9,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Checkout cpa-templates
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Create-Python-App/cpa-templates
           path: cpa-templates

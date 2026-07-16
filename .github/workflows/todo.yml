@@ -12,7 +12,7 @@ jobs:
   todo:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Scan TODOs
         run: |
           if grep -RIn --exclude-dir=.git --exclude-dir=.venv "TODO\|FIXME" . | head -50; then
