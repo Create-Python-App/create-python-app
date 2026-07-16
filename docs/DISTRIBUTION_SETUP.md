@@ -33,8 +33,10 @@ git tag create-awesome-python-app@X.Y.Z
 git push origin create-awesome-python-app@X.Y.Z
 ```
 
-5. Confirm Release (PyPI), Notify Homebrew, Publish to AUR, and Docker workflows
-6. Smoke: `uvx create-awesome-python-app@X.Y.Z --help`
+Then:
+
+1. Confirm Release (PyPI), Notify Homebrew, Publish to AUR, and Docker workflows
+2. Smoke: `uvx create-awesome-python-app@X.Y.Z --help`
 
 ## Docker Hub
 
