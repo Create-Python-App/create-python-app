@@ -1,0 +1,17 @@
+{
+  "name": "create-python-app",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/astral-sh/uv-feature/uv:1": {}
+  },
+  "postCreateCommand": "uv sync --group dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  }
+}
