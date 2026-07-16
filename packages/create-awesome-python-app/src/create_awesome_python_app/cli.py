@@ -34,7 +34,19 @@ def _in_ci() -> bool:
 
 
 def main() -> None:
+    """Console script entrypoint.
+
+    Route `cache` before Typer parses the scaffold Argument so that
+    `create-awesome-python-app cache dir` works (Typer would otherwise
+    treat `cache` as project_directory).
+    """
+    import sys
+
     check_python_version(">=3.12", "create-awesome-python-app")
+    if len(sys.argv) > 1 and sys.argv[1] == "cache":
+        sys.argv = [sys.argv[0], *sys.argv[2:]]
+        cache_app(prog_name="create-awesome-python-app cache")
+        return
     app()
 
 
