@@ -25,7 +25,12 @@ from create_python_app_core.git_cache import (
     read_cache_meta,
     write_cache_meta,
 )
-from create_python_app_core.paths import default_cache_dir, resolve_source
+from create_python_app_core.loaders import load_layer, merge_layers
+from create_python_app_core.paths import (
+    default_cache_dir,
+    get_template_dir_path,
+    resolve_source,
+)
 
 __all__ = [
     "__version__",
@@ -42,6 +47,9 @@ __all__ = [
     "CacheMeta",
     "read_cache_meta",
     "write_cache_meta",
+    "merge_layers",
+    "load_layer",
+    "get_template_dir_path",
     "CPA_USER_AGENT",
     "check_for_latest_version",
     "check_python_version",
