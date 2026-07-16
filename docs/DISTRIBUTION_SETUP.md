@@ -7,37 +7,19 @@
 | **PyPI** | `publish.yml` | OIDC Trusted Publishing (no token) |
 | **Docker** | `publish-docker.yml` | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
 | **AUR** | `publish-aur.yml` | `AUR_SSH_PRIVATE_KEY`, `AUR_REPO_TOKEN` |
-| **Homebrew** | `notify-homebrew.yml` | `HOMEBREW_TAP_TOKEN` |
+| **Homebrew** | `notify-homebrew.yml` → `homebrew-tap` | `HOMEBREW_TAP_TOKEN` |
 
 Configure secrets under **Settings → Secrets and variables → Actions**.
 
 ## PyPI Trusted Publishing
 
 The Release job uses the GitHub Actions environment **`pypi`**
-(Settings → Environments). Configure **two** pending Trusted Publishers on PyPI
-(same workflow publishes both packages):
+(Settings → Environments). Configure Trusted Publishers on PyPI for:
 
-### `create-python-app-core`
-
-| Field | Value |
-|-------|--------|
-| PyPI Project Name | `create-python-app-core` |
-| Owner | `Create-Python-App` |
-| Repository name | `create-python-app` |
-| Workflow name | `publish.yml` |
-| Environment name | `pypi` |
-
-### `create-awesome-python-app`
-
-| Field | Value |
-|-------|--------|
-| PyPI Project Name | `create-awesome-python-app` |
-| Owner | `Create-Python-App` |
-| Repository name | `create-python-app` |
-| Workflow name | `publish.yml` |
-| Environment name | `pypi` |
-
-On the first successful publish for tag `create-awesome-python-app@0.1.0`, OIDC creates the projects and uploads sdists/wheels for both packages.
+| Project | Owner | Repository | Workflow | Environment |
+|---------|-------|------------|----------|-------------|
+| `create-python-app-core` | `Create-Python-App` | `create-python-app` | `publish.yml` | `pypi` |
+| `create-awesome-python-app` | `Create-Python-App` | `create-python-app` | `publish.yml` | `pypi` |
 
 ## Cutting a release
 
@@ -47,21 +29,89 @@ On the first successful publish for tag `create-awesome-python-app@0.1.0`, OIDC 
 4. Tag and push:
 
 ```bash
-git tag create-awesome-python-app@0.1.0
-git push origin create-awesome-python-app@0.1.0
+git tag create-awesome-python-app@X.Y.Z
+git push origin create-awesome-python-app@X.Y.Z
 ```
 
-5. Confirm the Release workflow published both packages
-6. Smoke: `uvx create-awesome-python-app@0.1.0 --help`
+5. Confirm Release (PyPI), Notify Homebrew, Publish to AUR, and Docker workflows
+6. Smoke: `uvx create-awesome-python-app@X.Y.Z --help`
 
 ## Docker Hub
 
 Create a write token and set `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`.
 
-## AUR
+## AUR (`AUR_SSH_PRIVATE_KEY`, `AUR_REPO_TOKEN`)
 
-Bootstrap PKGBUILD in a future `Create-Python-App/aur-package` mirror; set SSH key secret.
+**Prereqs**: An AUR account that can own `create-awesome-python-app`, and the mirror
+[`Create-Python-App/aur-package`](https://github.com/Create-Python-App/aur-package).
 
-## Homebrew
+### Bootstrap the AUR package (first release only)
 
-Create `Create-Python-App/homebrew-tap` and allow `repository_dispatch` with `HOMEBREW_TAP_TOKEN`.
+```bash
+ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
+
+cd /tmp
+rm -rf aur-bootstrap
+git clone git@github.com:Create-Python-App/aur-package.git aur-bootstrap
+cd aur-bootstrap
+git remote add aur ssh://aur@aur.archlinux.org/create-awesome-python-app.git
+git push aur main:master
+```
+
+If AUR rejects the push because the package does not exist yet, create it via
+[aur.archlinux.org/submit](https://aur.archlinux.org/submit) first, then retry.
+
+### Generate / register the AUR SSH key
+
+```bash
+ssh-keygen -t ed25519 -C "aur-publish-cpa" -f ~/.ssh/aur_publish_cpa -N ""
+cat ~/.ssh/aur_publish_cpa.pub
+```
+
+Paste the public key under [AUR → My Account → SSH Public Key](https://aur.archlinux.org/account).
+Paste the **private** key as repo secret `AUR_SSH_PRIVATE_KEY`.
+
+### Generate `AUR_REPO_TOKEN`
+
+Fine-grained PAT with **Contents: Read and write** on `Create-Python-App/aur-package` only.
+Store as `AUR_REPO_TOKEN`.
+
+## Homebrew (`HOMEBREW_TAP_TOKEN`)
+
+**Prereqs**: [`Create-Python-App/homebrew-tap`](https://github.com/Create-Python-App/homebrew-tap)
+with `Formula/create-awesome-python-app.rb` and `update-formula.yml`.
+
+Fine-grained PAT with:
+
+- Repository: `Create-Python-App/homebrew-tap`
+- **Contents**: Read and write
+- **Actions**: Read and write (needed for `repository_dispatch`)
+
+Store as `HOMEBREW_TAP_TOKEN`.
+
+Install:
+
+```bash
+brew tap Create-Python-App/tap
+brew install create-awesome-python-app
+```
+
+## Verification
+
+```bash
+# Homebrew notify
+gh workflow run "Notify Homebrew tap" --repo Create-Python-App/create-python-app -f version=0.1.0
+
+# AUR publish
+gh workflow run "Publish to AUR" --repo Create-Python-App/create-python-app -f version=0.1.0
+
+# End-user checks
+uvx create-awesome-python-app@0.1.0 --version
+brew install create-awesome-python-app && create-awesome-python-app --version
+yay -S create-awesome-python-app && create-awesome-python-app --version
+```
+
+## After secrets are in place
+
+Every subsequent release only requires tagging `create-awesome-python-app@X.Y.Z`.
+PyPI, Homebrew notify, AUR, and Docker workflows fan out from that tag.

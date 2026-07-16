@@ -1,25 +1,126 @@
 name: Distribution smoke tests
+
+# Smoke-tests each published distribution channel:
+#   uvx      — PyPI via uvx
+#   homebrew — brew install on macos-latest
+#   aur      — makepkg inside an archlinux container
+#   versions — cross-check channel versions against PyPI
+
 on:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: smoke-distribution
+  cancel-in-progress: true
+
 jobs:
   uvx:
+    name: uvx (PyPI)
     runs-on: ubuntu-latest
     steps:
       - uses: astral-sh/setup-uv@v6
-      - name: Smoke uvx (when published)
+      - name: Smoke uvx
         run: |
-          if uvx create-awesome-python-app@latest --help; then
-            echo ok
-          else
-            echo "Package not on PyPI yet — soft fail"
-            exit 0
-          fi
-  docker:
-    runs-on: ubuntu-latest
-    continue-on-error: true
+          set -euo pipefail
+          uvx create-awesome-python-app@latest --version
+          uvx create-awesome-python-app@latest --help | head -5
+
+  homebrew:
+    name: Homebrew (Create-Python-App/tap)
+    runs-on: macos-latest
     steps:
-      - run: echo "Docker smoke activates after first image publish"
+      - name: Tap and install
+        run: |
+          brew tap Create-Python-App/tap
+          brew trust create-python-app/tap || true
+          brew install create-awesome-python-app
+
+      - name: Verify --version
+        run: |
+          VERSION=$(create-awesome-python-app --version 2>&1)
+          echo "homebrew version: $VERSION"
+          echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' || {
+            echo "::error::Unexpected version output: $VERSION"
+            exit 1
+          }
+
+      - name: Verify --help
+        run: create-awesome-python-app --help | head -5
+
+  aur:
+    name: AUR (archlinux container)
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Bootstrap Arch system and non-root builder
+        run: |
+          pacman -Sy --noconfirm --needed \
+            python python-pip python-build python-installer python-wheel \
+            base-devel sudo git curl ca-certificates
+          useradd -m -G wheel builder
+          echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+      - name: Clone AUR package and build
+        run: |
+          su builder -c "
+            set -euo pipefail
+            # Prefer live AUR; fall back to GitHub mirror during bootstrap.
+            if git clone https://aur.archlinux.org/create-awesome-python-app.git /tmp/cpa 2>/dev/null; then
+              cd /tmp/cpa
+            else
+              git clone https://github.com/Create-Python-App/aur-package.git /tmp/cpa
+              cd /tmp/cpa
+            fi
+            makepkg -si --noconfirm
+          "
+
+      - name: Verify --version
+        run: |
+          su builder -c "
+            VERSION=\$(create-awesome-python-app --version 2>&1)
+            echo \"aur version: \$VERSION\"
+            echo \"\$VERSION\" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\$' || exit 1
+          "
+
+      - name: Verify --help
+        run: su builder -c "create-awesome-python-app --help | head -5"
+
+  versions:
+    name: Cross-check published versions
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: astral-sh/setup-uv@v6
+      - name: Gather versions from each channel
+        run: |
+          set -euo pipefail
+
+          PYPI=$(curl -sfL https://pypi.org/pypi/create-awesome-python-app/json | \
+                 python3 -c "import json,sys; print(json.load(sys.stdin)['info']['version'])")
+
+          HOMEBREW=$(curl -sfL \
+                    https://raw.githubusercontent.com/Create-Python-App/homebrew-tap/main/Formula/create-awesome-python-app.rb | \
+                    grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unavailable")
+
+          AUR=$(curl -sfL \
+                "https://aur.archlinux.org/rpc/v5/info?arg=create-awesome-python-app" | \
+                python3 -c "import json,sys; d=json.load(sys.stdin); r=d.get('results') or []; print(r[0]['Version'].split('-')[0] if r else 'unavailable')" \
+                || echo "unavailable")
+
+          echo "Channel versions:"
+          echo "  pypi:     $PYPI"
+          echo "  homebrew: $HOMEBREW"
+          echo "  aur:      $AUR"
+
+          if [ "$HOMEBREW" != "unavailable" ] && [ "$HOMEBREW" != "$PYPI" ]; then
+            echo "::warning::Version mismatch: pypi=$PYPI homebrew=$HOMEBREW"
+          fi
+          if [ "$AUR" != "unavailable" ] && [ "$AUR" != "$PYPI" ]; then
+            echo "::warning::Version mismatch: pypi=$PYPI aur=$AUR (AUR may lag)"
+          fi

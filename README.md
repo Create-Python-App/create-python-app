@@ -4,9 +4,9 @@
 [![Lint](https://github.com/Create-Python-App/create-python-app/actions/workflows/lint.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/lint.yml)
 [![Typecheck](https://github.com/Create-Python-App/create-python-app/actions/workflows/type-check.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/type-check.yml)
 [![PyPI](https://img.shields.io/pypi/v/create-awesome-python-app.svg)](https://pypi.org/project/create-awesome-python-app/)
+[![AUR](https://img.shields.io/aur/version/create-awesome-python-app?label=AUR&logo=archlinux)](https://aur.archlinux.org/packages/create-awesome-python-app)
+[![Homebrew](https://img.shields.io/badge/homebrew-Create--Python--App%2Ftap-orange?logo=homebrew)](https://github.com/Create-Python-App/homebrew-tap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-
-<!-- PyPI / coverage badges activate after first publish -->
 
 Composable scaffolding CLI for production-ready Python apps.
 
@@ -18,6 +18,8 @@ Composable scaffolding CLI for production-ready Python apps.
 |------------|------|
 | [create-python-app](https://github.com/Create-Python-App/create-python-app) (this repo) | CLI (`create-awesome-python-app`) and scaffolding engine (`create-python-app-core`) |
 | [cpa-templates](https://github.com/Create-Python-App/cpa-templates) | Official templates and extensions (`templates.json` catalog) |
+| [homebrew-tap](https://github.com/Create-Python-App/homebrew-tap) | Homebrew formula |
+| [aur-package](https://github.com/Create-Python-App/aur-package) | AUR PKGBUILD mirror |
 
 The CLI fetches the catalog from:
 
@@ -28,7 +30,15 @@ Override with `CPA_CATALOG_URL` for forks or local testing (`file://` supported)
 ## Install
 
 ```bash
+# PyPI / uv
 uvx create-awesome-python-app@latest my-app
+
+# Homebrew
+brew tap Create-Python-App/tap
+brew install create-awesome-python-app
+
+# AUR
+yay -S create-awesome-python-app
 ```
 
 Or pin a version:
