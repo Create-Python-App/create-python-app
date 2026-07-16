@@ -87,6 +87,82 @@ def resolve_catalog_specs(
     return [resolve_catalog_spec(spec, catalog=catalog) for spec in specs]
 
 
+class IncompatibleExtensionsError(ValueError):
+    """Raised when selected extensions declare mutual incompatibility."""
+
+    def __init__(self, pairs: list[tuple[str, str]]) -> None:
+        self.pairs = pairs
+        rendered = ", ".join(f"'{a}' ↔ '{b}'" for a, b in pairs)
+        super().__init__(
+            "Incompatible extension combination: "
+            f"{rendered}. Remove one of each conflicting pair and retry."
+        )
+
+
+def _extension_entries(catalog: dict[str, Any]) -> list[dict[str, Any]]:
+    raw = catalog.get("extensions", catalog.get("addons", []))
+    if not isinstance(raw, list):
+        return []
+    return [entry for entry in raw if isinstance(entry, dict)]
+
+
+def find_extension_entry(catalog: dict[str, Any], spec: str) -> dict[str, Any] | None:
+    """Find an extension by slug or URL."""
+    for entry in _extension_entries(catalog):
+        slug = str(entry.get("slug", ""))
+        url = str(entry.get("url", ""))
+        if spec in (slug, url):
+            return entry
+    return None
+
+
+def find_incompatible_pairs(
+    specs: list[str], *, catalog: dict[str, Any] | None = None
+) -> list[tuple[str, str]]:
+    """Return ordered (slug, conflicting_slug) pairs among *specs*."""
+    data = catalog if catalog is not None else get_catalog_data()
+    selected: list[dict[str, Any]] = []
+    seen_slugs: set[str] = set()
+    for spec in specs:
+        entry = find_extension_entry(data, spec)
+        if entry is None:
+            continue
+        slug = str(entry.get("slug", ""))
+        if not slug or slug in seen_slugs:
+            continue
+        seen_slugs.add(slug)
+        selected.append(entry)
+
+    selected_slugs = {str(entry.get("slug", "")) for entry in selected}
+    pairs: list[tuple[str, str]] = []
+    reported: set[tuple[str, str]] = set()
+    for entry in selected:
+        slug = str(entry.get("slug", ""))
+        raw = entry.get("incompatibleWith") or entry.get("incompatible_with") or []
+        if not isinstance(raw, list):
+            continue
+        for other in raw:
+            other_slug = str(other)
+            if other_slug not in selected_slugs or other_slug == slug:
+                continue
+            first, second = sorted((slug, other_slug))
+            key = (first, second)
+            if key in reported:
+                continue
+            reported.add(key)
+            pairs.append((slug, other_slug))
+    return pairs
+
+
+def validate_extension_compatibility(
+    specs: list[str], *, catalog: dict[str, Any] | None = None
+) -> None:
+    """Fail fast when selected catalog extensions are mutually incompatible."""
+    pairs = find_incompatible_pairs(specs, catalog=catalog)
+    if pairs:
+        raise IncompatibleExtensionsError(pairs)
+
+
 def short_category_label(category_name: str) -> str:
     """Derive a compact badge label from a catalog category name."""
     stop_words = {"Applications", "Application", "Boilerplate"}

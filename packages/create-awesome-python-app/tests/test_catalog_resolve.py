@@ -6,13 +6,16 @@ import pytest
 from create_awesome_python_app.catalog import (
     CUSTOM_TEMPLATE_SENTINEL,
     CatalogResolutionError,
+    IncompatibleExtensionsError,
     build_extension_choices,
     build_template_choices,
+    find_incompatible_pairs,
     group_extension_choices,
     is_url_like,
     resolve_catalog_spec,
     resolve_catalog_specs,
     short_category_label,
+    validate_extension_compatibility,
 )
 
 SAMPLE_CATALOG = {
@@ -196,3 +199,59 @@ def test_group_extension_choices_preserves_category_order() -> None:
 
     assert list(grouped) == ["ci", "data"]
     assert grouped["ci"][0].value == "file:///extensions/github"
+
+
+def test_validate_extension_compatibility_ok() -> None:
+    catalog = {
+        "extensions": [
+            {
+                "slug": "github-setup",
+                "url": "file:///ext/github",
+                "incompatibleWith": ["other"],
+            },
+            {"slug": "python-docker", "url": "file:///ext/docker"},
+        ]
+    }
+    validate_extension_compatibility(["github-setup", "python-docker"], catalog=catalog)
+
+
+def test_validate_extension_compatibility_fails_on_pair() -> None:
+    catalog = {
+        "extensions": [
+            {
+                "slug": "react-redux-saga",
+                "url": "file:///ext/saga",
+                "incompatibleWith": ["react-redux-thunk"],
+            },
+            {
+                "slug": "react-redux-thunk",
+                "url": "file:///ext/thunk",
+                "incompatibleWith": ["react-redux-saga"],
+            },
+        ]
+    }
+    with pytest.raises(IncompatibleExtensionsError, match="react-redux-saga") as ei:
+        validate_extension_compatibility(
+            ["react-redux-saga", "file:///ext/thunk"],
+            catalog=catalog,
+        )
+    assert ei.value.pairs == [("react-redux-saga", "react-redux-thunk")]
+
+
+def test_find_incompatible_pairs_dedupes_symmetric_edges() -> None:
+    catalog = {
+        "extensions": [
+            {
+                "slug": "a",
+                "url": "file:///a",
+                "incompatibleWith": ["b"],
+            },
+            {
+                "slug": "b",
+                "url": "file:///b",
+                "incompatibleWith": ["a"],
+            },
+        ]
+    }
+    pairs = find_incompatible_pairs(["a", "b"], catalog=catalog)
+    assert pairs == [("a", "b")]

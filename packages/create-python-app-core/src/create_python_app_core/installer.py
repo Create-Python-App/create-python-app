@@ -13,7 +13,11 @@ from create_python_app_core.config import (
     assert_directory_is_empty,
     load_cpa_config,
 )
-from create_python_app_core.errors import CpaError, ScaffoldAbortedError
+from create_python_app_core.errors import (
+    CpaError,
+    IncompatibleExtensionsError,
+    ScaffoldAbortedError,
+)
 from create_python_app_core.git_cache import RefreshMode, download_repository
 from create_python_app_core.loaders import merge_layers
 from create_python_app_core.paths import ResolvedSource, resolve_source
@@ -58,6 +62,42 @@ def build_scaffold_context(
     return context
 
 
+def _config_incompatible_list(cfg: CpaConfig) -> list[str]:
+    raw = cfg.raw.get("incompatibleWith") or cfg.raw.get("incompatible_with") or []
+    if not isinstance(raw, list):
+        return []
+    return [str(item) for item in raw]
+
+
+def validate_config_incompatible_extensions(configs: list[CpaConfig]) -> None:
+    """Fail when loaded cpa.config.json layers declare mutual incompatibility.
+
+    The template config (first entry) is ignored; only addon/extend layers are
+    checked. Matches are against each layer's ``name`` field (slug-like id).
+    """
+    addon_configs = [cfg for cfg in configs[1:] if cfg.name]
+    names = {str(cfg.name) for cfg in addon_configs}
+    pairs: list[tuple[str, str]] = []
+    reported: set[tuple[str, str]] = set()
+    for cfg in addon_configs:
+        name = str(cfg.name)
+        for other in _config_incompatible_list(cfg):
+            if other not in names or other == name:
+                continue
+            first, second = sorted((name, other))
+            key = (first, second)
+            if key in reported:
+                continue
+            reported.add(key)
+            pairs.append((name, other))
+    if pairs:
+        rendered = ", ".join(f"'{a}' ↔ '{b}'" for a, b in pairs)
+        raise IncompatibleExtensionsError(
+            "Incompatible extension combination from cpa.config.json: "
+            f"{rendered}. Remove one of each conflicting pair and retry."
+        )
+
+
 def scaffold_project(
     project_directory: str,
     *,
@@ -92,6 +132,7 @@ def scaffold_project(
             layers.append((source, root))
             configs.append(load_cpa_config(_config_path(source, root)))
 
+        validate_config_incompatible_extensions(configs)
         context = build_scaffold_context(dest.name, configs, options)
         merge_layers(layers, dest, context=context)
 
