@@ -1,0 +1,19 @@
+name: Publish to AUR
+on:
+  push:
+    tags:
+      - "create-awesome-python-app@*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version"
+        required: true
+jobs:
+  aur:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "AUR publish requires AUR_SSH_PRIVATE_KEY + optional Create-Python-App/aur-package mirror"
+          echo "See docs/DISTRIBUTION_SETUP.md"
