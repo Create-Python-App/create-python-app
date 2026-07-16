@@ -126,9 +126,7 @@ def scaffold(
                 qmark="?",
                 pointer=">",
             ).ask()
-            selected_template = choice_by_title.get(
-                str(selected_title), selected_title
-            )
+            selected_template = choice_by_title.get(str(selected_title), selected_title)
             if selected_template == CUSTOM_TEMPLATE_SENTINEL:
                 selected_template = questionary.text(
                     "Template URL",
