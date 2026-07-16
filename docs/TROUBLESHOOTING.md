@@ -128,11 +128,11 @@ Layout:
 ```text
 ~/.cache/cpa/
   catalog/
-    templates.json
+     templates.json
   repos/
-    <cache-key>/
-      .cpa-cache.json
-      ...
+     <cache-key>/
+       .cpa-cache.json
+       ...
 ```
 
 If a scaffold "looks weird" and you suspect a stale cache, the first diagnostic
@@ -198,24 +198,24 @@ uv --version
 create-awesome-python-app --info
 ```
 
-2. Check the generated project's `.python-version` and `requires-python` in
-   `pyproject.toml` match your interpreter.
+1. Check the generated project's `.python-version` and `requires-python` in
+    `pyproject.toml` match your interpreter.
 
-3. Retry manually inside the project:
+1. Retry manually inside the project:
 
 ```bash
 cd my-app
 uv sync
 ```
 
-4. If you only need the file tree (no install), skip sync during scaffold:
+1. If you only need the file tree (no install), skip sync during scaffold:
 
 ```bash
 uvx create-awesome-python-app my-app -t fastapi-starter --no-install --no-interactive
 ```
 
-5. For network or index issues, retry with verbose logging or behind a proxy;
-   CPA does not wrap `uv` output -- read the `uv sync` error directly.
+1. For network or index issues, retry with verbose logging or behind a proxy;
+    CPA does not wrap `uv` output -- read the `uv sync` error directly.
 
 ## Git clone failures
 
@@ -234,20 +234,20 @@ git --version
 create-awesome-python-app --info
 ```
 
-2. Warm the cache while online, then scaffold offline:
+1. Warm the cache while online, then scaffold offline:
 
 ```bash
 uvx create-awesome-python-app my-app -t fastapi-starter --no-interactive
 uvx create-awesome-python-app my-app2 -t fastapi-starter --offline --no-interactive
 ```
 
-3. For private repos, ensure SSH keys or credentials work outside CPA:
+1. For private repos, ensure SSH keys or credentials work outside CPA:
 
 ```bash
 git ls-remote git@github.com:your-org/your-template.git
 ```
 
-4. Clear a corrupted cache entry and retry:
+1. Clear a corrupted cache entry and retry:
 
 ```bash
 uvx create-awesome-python-app cache verify
@@ -255,7 +255,7 @@ uvx create-awesome-python-app cache clean
 uvx create-awesome-python-app my-app -t fastapi-starter --no-interactive
 ```
 
-5. Use `file://` URLs to scaffold from a local checkout without network access.
+1. Use `file://` URLs to scaffold from a local checkout without network access.
 
 ## incompatibleWith errors
 
@@ -273,9 +273,9 @@ layers before merging.
 uvx create-awesome-python-app --list-addons -t fastapi-starter
 ```
 
-2. Remove one extension from each conflicting pair in `--addons` / `--extend`.
+1. Remove one extension from each conflicting pair in `--addons` / `--extend`.
 
-3. When authoring extensions, set `incompatibleWith` in `cpa.config.json`:
+1. When authoring extensions, set `incompatibleWith` in `cpa.config.json`:
 
 ```json
 {
