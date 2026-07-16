@@ -1,8 +1,59 @@
 {
-  "templates": [
-    {"slug": "example-cli", "category": "cli", "url": "file://."}
+  "$schema": "https://raw.githubusercontent.com/Create-Python-App/cpa-templates/main/templates.schema.json",
+  "categories": [
+    {
+      "slug": "backend-applications",
+      "name": "Backend Applications",
+      "description": "API and service starters for FastAPI and similar Python backends.",
+      "details": "Use when the deliverable is an HTTP API or background worker.",
+      "labels": ["Backend", "API", "Python", "FastAPI"]
+    },
+    {
+      "slug": "tooling",
+      "name": "Tooling",
+      "description": "Extensions that add CI, containers, databases, and developer ergonomics.",
+      "details": "Layer these on top of a compatible template.",
+      "labels": ["DevOps", "CI", "Docker", "Tooling"]
+    }
   ],
-  "addons": [
-    {"slug": "ruff-setup", "category": "tooling"}
+  "templates": [
+    {
+      "name": "FastAPI Starter",
+      "slug": "fastapi-starter",
+      "description": "Production-ready FastAPI API with uv, Ruff, pytest, and pydantic-settings",
+      "url": "https://github.com/Create-Python-App/cpa-templates?subdir=templates/fastapi-starter",
+      "type": "fastapi-backend",
+      "category": "backend-applications",
+      "labels": ["FastAPI", "API", "Python", "uv", "Backend"]
+    },
+    {
+      "name": "Example CLI",
+      "slug": "example-cli",
+      "description": "Minimal local fixture template for tests",
+      "url": "file://.",
+      "type": "cli",
+      "category": "tooling",
+      "labels": ["Example"]
+    }
+  ],
+  "extensions": [
+    {
+      "name": "Ruff Setup",
+      "slug": "ruff-setup",
+      "description": "Local fixture extension for tests",
+      "url": "file://.",
+      "type": ["cli", "fastapi-backend"],
+      "category": "tooling",
+      "labels": ["Ruff"]
+    },
+    {
+      "name": "GitHub Setup",
+      "slug": "github-setup",
+      "description": "GitHub Actions CI, Dependabot, issue templates",
+      "url": "https://github.com/Create-Python-App/cpa-templates?subdir=extensions/github-setup",
+      "type": ["fastapi-backend"],
+      "category": "tooling",
+      "labels": ["GitHub", "CI"]
+    }
   ]
 }
