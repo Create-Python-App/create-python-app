@@ -8,3 +8,10 @@ Secrets and publishers (see also #58–#63):
 | Docker Hub | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
 | AUR | `AUR_SSH_PRIVATE_KEY`, `AUR_REPO_TOKEN` |
 | Homebrew | `HOMEBREW_TAP_TOKEN` |
+
+## PyPI Trusted Publishing
+
+1. Create a Trusted Publisher on PyPI for `create-awesome-python-app`
+2. Repository: `Create-Python-App/create-python-app`
+3. Workflow: `publish.yml`
+4. No `PYPI_TOKEN` secret required when using OIDC
