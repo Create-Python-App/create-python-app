@@ -1,1 +1,8 @@
-{"templates":[{"slug":"example-cli","category":"cli","url":"file://."}],"addons":[{"slug":"ruff-setup","category":"tooling"}]}
+{
+  "templates": [
+    {"slug": "example-cli", "category": "cli", "url": "file://."}
+  ],
+  "addons": [
+    {"slug": "ruff-setup", "category": "tooling"}
+  ]
+}
