@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "create-python-app-core",
+    "rich>=15.0.0",
+    "typer>=0.27.0",
 ]
 
 [project.scripts]
