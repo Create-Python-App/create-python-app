@@ -59,6 +59,13 @@ uv sync
 uv run create-awesome-python-app --help
 ```
 
+### Shell completion
+
+```bash
+create-awesome-python-app --install-completion   # bash / zsh / fish
+create-awesome-python-app --show-completion      # print script only
+```
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).

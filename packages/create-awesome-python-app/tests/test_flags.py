@@ -23,5 +23,7 @@ def test_help_lists_scaffold_flags() -> None:
         "--set",
         "--force",
         "--no-install",
+        "--install-completion",
+        "--show-completion",
     ]:
         assert flag in text
