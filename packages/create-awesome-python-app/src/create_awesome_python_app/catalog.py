@@ -36,7 +36,7 @@ def is_url_like(spec: str) -> bool:
 
 
 def resolve_catalog_spec(spec: str, *, catalog: dict[str, Any] | None = None) -> str:
-    """Resolve a catalog slug to its registry URL, or return URL-like specs unchanged."""
+    """Resolve a catalog slug to its registry URL."""
     if is_url_like(spec):
         return spec
     data = catalog if catalog is not None else get_catalog_data()
