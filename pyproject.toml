@@ -1,0 +1,5 @@
+# Virtual workspace root — not a publishable package.
+# See: https://pydevtools.com/handbook/how-to/how-to-set-up-a-python-monorepo-with-uv-workspaces/
+
+[tool.uv.workspace]
+members = ["packages/*"]

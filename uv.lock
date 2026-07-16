@@ -1,0 +1,25 @@
+version = 1
+revision = 3
+requires-python = ">=3.12"
+
+[manifest]
+members = [
+    "create-awesome-python-app",
+    "create-python-app-core",
+]
+
+[[package]]
+name = "create-awesome-python-app"
+version = "0.0.0"
+source = { editable = "packages/create-awesome-python-app" }
+dependencies = [
+    { name = "create-python-app-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "create-python-app-core", editable = "packages/create-python-app-core" }]
+
+[[package]]
+name = "create-python-app-core"
+version = "0.0.0"
+source = { editable = "packages/create-python-app-core" }
