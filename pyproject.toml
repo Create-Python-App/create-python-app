@@ -18,6 +18,8 @@ dev = [
     "ruff>=0.12.0",
     "pyright>=1.1.400",
     "pre-commit>=4.0.0",
+    "pytest-cov>=6.0.0",
+    "pytest>=8.0.0",
 ]
 
 
@@ -39,3 +41,17 @@ pythonVersion = "3.12"
 typeCheckingMode = "basic"
 venvPath = "."
 venv = ".venv"
+
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+pythonpath = ["packages/create-python-app-core/src", "packages/create-awesome-python-app/src"]
+
+[tool.coverage.run]
+source = ["create_python_app_core", "create_awesome_python_app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 50
+show_missing = true
+skip_empty = true
