@@ -5,14 +5,20 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
+from typing import Any
 
 import typer
 from create_python_app_core import (
+    ConfigParseError,
+    CpaCustomOption,
     check_for_latest_version,
     check_python_version,
     create_python_app,
     default_cache_dir,
+    download_repository,
+    load_cpa_config,
     print_env_info,
+    resolve_source,
 )
 from rich.console import Console
 
@@ -31,6 +37,97 @@ console = Console(stderr=True)
 
 def _in_ci() -> bool:
     return os.environ.get("CI", "").lower() in {"1", "true", "yes"}
+
+
+def _template_config_path(source_subdir: str | None, root: Path) -> Path:
+    cfg_path = root / "cpa.config.json"
+    if not cfg_path.is_file() and source_subdir:
+        cfg_path = root / source_subdir / "cpa.config.json"
+    return cfg_path
+
+
+def _parse_set_options(set_opt: list[str] | None) -> dict[str, str]:
+    set_map: dict[str, str] = {}
+    for item in set_opt or []:
+        if "=" not in item:
+            console.print(f"[red]Invalid --set {item} (expected key=value)[/red]")
+            raise typer.Exit(2)
+        key, value = item.split("=", 1)
+        set_map[key] = value
+    return set_map
+
+
+def _stringify_option_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def _registry_custom_options(items: list[dict[str, Any]]) -> list[CpaCustomOption]:
+    options: list[CpaCustomOption] = []
+    for item in items:
+        key = item.get("key") or item.get("name")
+        if not key:
+            continue
+        options.append(
+            CpaCustomOption(
+                key=str(key),
+                type=str(item.get("type", "string")),
+                message=str(item.get("message", "")),
+                default=item.get("default", item.get("initial")),
+            )
+        )
+    return options
+
+
+def _prompt_custom_options(
+    template: str,
+    *,
+    set_map: dict[str, str],
+    cache_dir: Path | None,
+    offline: bool,
+    registry_options: list[dict[str, Any]] | None = None,
+) -> dict[str, str]:
+    import questionary
+
+    source = resolve_source(template, cache_dir=cache_dir)
+    root = download_repository(source, offline=offline, cache_root=cache_dir)
+    try:
+        config = load_cpa_config(_template_config_path(source.subdir, root))
+    except ConfigParseError as err:
+        console.print(f"[yellow]Warning: {err}[/yellow]")
+        return {}
+
+    custom_options = config.custom_options
+    if not custom_options and registry_options:
+        custom_options = _registry_custom_options(registry_options)
+
+    answers: dict[str, str] = {}
+    blocked_types = {"password", "invisible"}
+    for option in custom_options:
+        if option.type in blocked_types:
+            console.print(
+                f"[yellow]Warning: skipped blocked custom option {option.key}[/yellow]"
+            )
+            continue
+        if option.key in set_map:
+            answers[option.key] = set_map[option.key]
+            continue
+        initial = set_map.get(option.key, _stringify_option_value(option.default))
+        message = option.message or option.key
+        if option.type in {"bool", "boolean", "confirm"}:
+            answer = questionary.confirm(
+                message,
+                default=initial.lower() in {"1", "true", "yes", "on"},
+            ).ask()
+        else:
+            answer = questionary.text(message, default=initial).ask()
+        if answer is None:
+            raise typer.Exit(1)
+        answers[option.key] = _stringify_option_value(answer)
+    return answers
 
 
 def main() -> None:
@@ -145,6 +242,8 @@ def scaffold(
         console.print("[red]--template is required in non-interactive mode[/red]")
         raise typer.Exit(2)
 
+    set_map = _parse_set_options(set_opt)
+
     from create_awesome_python_app.catalog import (
         CatalogResolutionError,
         resolve_catalog_spec,
@@ -158,6 +257,10 @@ def scaffold(
     except CatalogResolutionError as err:
         console.print(f"[red]{err}[/red]")
         raise typer.Exit(2) from err
+
+    if pin and "://" in template and "ref=" not in template:
+        sep = "&" if "?" in template else "?"
+        template = f"{template}{sep}ref={pin}"
 
     if want_interactive and not addons:
         try:
@@ -211,9 +314,38 @@ def scaffold(
             console.print("[red]questionary not available[/red]")
             raise typer.Exit(1) from None
 
-    if pin and "://" in template and "ref=" not in template:
-        sep = "&" if "?" in template else "?"
-        template = f"{template}{sep}ref={pin}"
+    if want_interactive:
+        try:
+            from create_awesome_python_app.catalog import (
+                find_template_by_url,
+                get_catalog_data,
+            )
+
+            interactive_catalog = interactive_catalog or get_catalog_data()
+            registry_options: list[dict[str, Any]] = []
+            template_entry = find_template_by_url(interactive_catalog, template)
+            if template_entry:
+                raw_registry_options = (
+                    template_entry.get("customOptions")
+                    or template_entry.get("custom_options")
+                    or []
+                )
+                if isinstance(raw_registry_options, list):
+                    registry_options = [
+                        item for item in raw_registry_options if isinstance(item, dict)
+                    ]
+            custom_answers = _prompt_custom_options(
+                template,
+                set_map=set_map,
+                cache_dir=cache_dir,
+                offline=offline,
+                registry_options=registry_options,
+            )
+        except ImportError:
+            console.print("[red]questionary not available[/red]")
+            raise typer.Exit(1) from None
+        custom_answers.update(set_map)
+        set_map = custom_answers
 
     # version check
     latest = asyncio.run(check_for_latest_version("create-awesome-python-app"))
@@ -227,14 +359,6 @@ def scaffold(
             console.print(f"[red]{msg}[/red]")
             raise typer.Exit(1)
         console.print(f"[yellow]{msg}[/yellow]")
-
-    set_map: dict[str, str] = {}
-    for item in set_opt or []:
-        if "=" not in item:
-            console.print(f"[red]Invalid --set {item} (expected key=value)[/red]")
-            raise typer.Exit(2)
-        k, v = item.split("=", 1)
-        set_map[k] = v
 
     asyncio.run(
         create_python_app(
