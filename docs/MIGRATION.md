@@ -16,12 +16,12 @@ updates require deliberate effort.
 ## Strategy 1: Manual dependency updates
 
 1. Run `uv lock --upgrade` (or `uv lock --upgrade-package <name>`) in your
-   project to refresh pinned versions in `uv.lock`.
+    project to refresh pinned versions in `uv.lock`.
 2. Enable Dependabot if you used the `github-setup` extension (see its workflow
-   in cpa-templates).
+    in cpa-templates).
 3. Compare your `pyproject.toml` scripts, dependency groups, and dev tools
-   with the current template in
-   [cpa-templates](https://github.com/Create-Python-App/cpa-templates/tree/main/templates).
+    with the current template in
+    [cpa-templates](https://github.com/Create-Python-App/cpa-templates/tree/main/templates).
 
 Use `uv tree --outdated` when available to spot stale direct dependencies.
 
@@ -55,7 +55,7 @@ For a single extension update:
 
 1. Scaffold a throwaway project with only that extension applied.
 2. Copy the extension-specific files into your existing project (e.g. Alembic
-   migrations, auth middleware, GitHub Actions workflows).
+    migrations, auth middleware, GitHub Actions workflows).
 3. Merge `pyproject.toml` dependency changes manually.
 
 ## CNA to CPA renames
@@ -164,11 +164,11 @@ create-awesome-python-app cache clean
 There is no `cpa add-extension` command yet. To add an extension after the fact:
 
 1. Browse the extension in
-   [cpa-templates/extensions](https://github.com/Create-Python-App/cpa-templates/tree/main/extensions).
+    [cpa-templates/extensions](https://github.com/Create-Python-App/cpa-templates/tree/main/extensions).
 2. Read the extension README for required files and dependencies.
 3. Scaffold a minimal project with that extension and copy the relevant files.
 4. Install matching dependencies from the extension's `pyproject.toml` (or run
-   `uv sync` in the throwaway project and mirror the dependency blocks).
+    `uv sync` in the throwaway project and mirror the dependency blocks).
 
 Use `--list-addons -t <template-slug>` to see extensions compatible with your
 base template.
@@ -179,14 +179,14 @@ If you are moving a hand-rolled Cookiecutter/Copier flow into the CPA
 ecosystem:
 
 1. Map your template repo to a `templates.json` entry (slug, name, category,
-   `url` with `?subdir=`).
+    `url` with `?subdir=`).
 2. Add `cpa.config.json` at the template root (see
-   [cpa-config-schema.md](./cpa-config-schema.md)).
+    [cpa-config-schema.md](./cpa-config-schema.md)).
 3. Prefer `uv` lockfiles (`uv.lock`) in generated projects instead of
-   unpinned `requirements.txt` unless the template explicitly targets pip-only
-   workflows.
+    unpinned `requirements.txt` unless the template explicitly targets pip-only
+    workflows.
 4. Convert Jinja-style prompts to `customOptions` in `cpa.config.json` where
-   possible; use `--set key=value` for non-interactive runs.
+    possible; use `--set key=value` for non-interactive runs.
 
 ## Getting help
 
