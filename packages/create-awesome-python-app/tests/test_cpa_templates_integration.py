@@ -56,10 +56,14 @@ def test_scaffold_fastapi_starter_from_cpa_templates(
     sync = subprocess.run(["uv", "sync"], cwd=dest, capture_output=True, text=True)
     assert sync.returncode == 0, sync.stderr
 
-    lint = subprocess.run(["uv", "run", "ruff", "check", "."], cwd=dest, capture_output=True, text=True)
+    lint = subprocess.run(
+        ["uv", "run", "ruff", "check", "."], cwd=dest, capture_output=True, text=True
+    )
     assert lint.returncode == 0, lint.stderr
 
-    tests = subprocess.run(["uv", "run", "pytest", "-q"], cwd=dest, capture_output=True, text=True)
+    tests = subprocess.run(
+        ["uv", "run", "pytest", "-q"], cwd=dest, capture_output=True, text=True
+    )
     assert tests.returncode == 0, tests.stdout + tests.stderr
 
 

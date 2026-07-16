@@ -1,6 +1,8 @@
 # Tracking: `cpa-templates` + website
 
-Previously tracked by https://github.com/Create-Python-App/create-python-app/issues/44 (closed).
+Previously tracked by
+[issue #44](https://github.com/Create-Python-App/create-python-app/issues/44)
+(closed).
 
 ## Status
 
@@ -15,8 +17,8 @@ Previously tracked by https://github.com/Create-Python-App/create-python-app/iss
 
 | Repo | URL |
 |------|-----|
-| CLI monorepo | https://github.com/Create-Python-App/create-python-app |
-| Template bank | https://github.com/Create-Python-App/cpa-templates |
+| CLI monorepo | [create-python-app](https://github.com/Create-Python-App/create-python-app) |
+| Template bank | [cpa-templates](https://github.com/Create-Python-App/cpa-templates) |
 
 ## CNA parity reference
 

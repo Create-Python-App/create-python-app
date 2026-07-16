@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from create_python_app_core.config import CpaConfig, CpaCustomOption
 from create_python_app_core.installer import build_scaffold_context, scaffold_project
 

@@ -121,20 +121,30 @@ jobs:
         run: |
           set -euo pipefail
 
-          PYPI=$(curl -sfL https://pypi.org/pypi/create-awesome-python-app/json | \
-                 python3 -c "import json,sys; print(json.load(sys.stdin)['info']['version'])")
+          PYPI=$(
+            curl -sfL https://pypi.org/pypi/create-awesome-python-app/json \
+              | python3 -c "import json,sys; print(json.load(sys.stdin)['info']['version'])"
+          )
 
-          DOCKER=$(docker run --rm ulisesjeremias/create-awesome-python-app:latest --version 2>&1 \
-                   || echo "unavailable")
+          DOCKER=$(
+            docker run --rm ulisesjeremias/create-awesome-python-app:latest --version 2>&1 \
+              || echo "unavailable"
+          )
 
-          HOMEBREW=$(curl -sfL \
-                    https://raw.githubusercontent.com/Create-Python-App/homebrew-tap/main/Formula/create-awesome-python-app.rb | \
-                    grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unavailable")
+          FORMULA_URL="https://raw.githubusercontent.com/Create-Python-App/homebrew-tap/main/Formula/create-awesome-python-app.rb"
+          HOMEBREW=$(
+            curl -sfL "$FORMULA_URL" \
+              | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
+              | head -1 \
+              || echo "unavailable"
+          )
 
-          AUR=$(curl -sfL \
-                "https://aur.archlinux.org/rpc/v5/info?arg=create-awesome-python-app" | \
-                python3 -c "import json,sys; d=json.load(sys.stdin); r=d.get('results') or []; print(r[0]['Version'].split('-')[0] if r else 'unavailable')" \
-                || echo "unavailable")
+          AUR_RPC="https://aur.archlinux.org/rpc/v5/info?arg=create-awesome-python-app"
+          AUR=$(
+            curl -sfL "$AUR_RPC" \
+              | python3 -c "import json,sys; d=json.load(sys.stdin); r=d.get('results') or []; print(r[0]['Version'].split('-')[0] if r else 'unavailable')" \
+              || echo "unavailable"
+          )
 
           echo "Channel versions:"
           echo "  pypi:     $PYPI"

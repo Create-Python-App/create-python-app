@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
-
 from create_awesome_python_app.cli import app
+from typer.testing import CliRunner
 
 runner = CliRunner()
 
@@ -12,9 +11,7 @@ def test_help_smoke() -> None:
     assert runner.invoke(app, ["--help"]).exit_code == 0
 
 
-def test_scaffold_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_scaffold_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CPA_SKIP_GIT", "1")
     monkeypatch.setenv("CI", "1")
     tpl = tmp_path / "tpl"

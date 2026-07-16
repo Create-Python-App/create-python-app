@@ -18,9 +18,7 @@ from create_awesome_python_app import __version__
 
 console = Console(stderr=True)
 
-DEFAULT_CATALOG_URL = (
-    "https://raw.githubusercontent.com/Create-Python-App/cpa-templates/main/templates.json"
-)
+DEFAULT_CATALOG_URL = "https://raw.githubusercontent.com/Create-Python-App/cpa-templates/main/templates.json"
 CACHE_TTL_SECONDS = 3600
 FETCH_TIMEOUT_SECONDS = 10
 USER_AGENT = f"create-awesome-python-app/{__version__} (https://github.com/Create-Python-App/create-python-app)"
@@ -111,22 +109,31 @@ def get_catalog_data(*, force_refresh: bool = False) -> dict[str, Any]:
         try:
             data = _fetch_remote(url)
             _write_disk_cache(data)
-        except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as err:
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            OSError,
+            json.JSONDecodeError,
+        ) as err:
             disk = _read_disk_cache()
             if disk is not None:
                 console.print(
-                    f"[yellow][cpa] Could not refresh catalog ({err}); using disk cache.[/yellow]"
+                    "[yellow][cpa] Could not refresh catalog "
+                    f"({err}); using disk cache.[/yellow]"
                 )
                 data = disk
             else:
                 fixture = _read_fixture()
                 if fixture.get("templates"):
                     console.print(
-                        f"[yellow][cpa] Could not refresh catalog ({err}); using fixture.[/yellow]"
+                        "[yellow][cpa] Could not refresh catalog "
+                        f"({err}); using fixture.[/yellow]"
                     )
                     data = fixture
                 else:
-                    raise RuntimeError(f"Failed to load template catalog: {err}") from err
+                    raise RuntimeError(
+                        f"Failed to load template catalog: {err}"
+                    ) from err
 
     _memory_cache = data
     _memory_ts = time.time()
@@ -173,7 +180,9 @@ def list_addons(template_slug: str | None = None) -> None:
             ext_types = [ext_types]
         if template_type and template_type not in ext_types:
             continue
-        type_label = ", ".join(ext_types) if isinstance(ext_types, list) else str(ext_types)
+        type_label = (
+            ", ".join(ext_types) if isinstance(ext_types, list) else str(ext_types)
+        )
         table.add_row(
             str(ext.get("slug", "")),
             str(ext.get("category", "")),

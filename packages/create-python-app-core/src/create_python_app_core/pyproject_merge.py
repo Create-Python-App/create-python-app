@@ -54,7 +54,11 @@ def merge_tables(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any
             result[key] = overlay_value
             continue
         base_value = result[key]
-        if key == "dependencies" and _is_sequence(base_value) and _is_sequence(overlay_value):
+        if (
+            key == "dependencies"
+            and _is_sequence(base_value)
+            and _is_sequence(overlay_value)
+        ):
             result[key] = merge_dependency_lists(list(base_value), list(overlay_value))
         elif (
             key == "optional-dependencies"
@@ -63,22 +67,40 @@ def merge_tables(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any
         ):
             merged_opt: dict[str, Any] = dict(base_value)
             for opt_key, opt_val in overlay_value.items():
-                if opt_key in merged_opt and _is_sequence(merged_opt[opt_key]) and _is_sequence(opt_val):
+                if (
+                    opt_key in merged_opt
+                    and _is_sequence(merged_opt[opt_key])
+                    and _is_sequence(opt_val)
+                ):
                     merged_opt[opt_key] = merge_dependency_lists(
                         list(merged_opt[opt_key]), list(opt_val)
                     )
                 else:
                     merged_opt[opt_key] = opt_val
             result[key] = merged_opt
-        elif key == "dependency-groups" and _is_mapping(base_value) and _is_mapping(overlay_value):
+        elif (
+            key == "dependency-groups"
+            and _is_mapping(base_value)
+            and _is_mapping(overlay_value)
+        ):
             merged_groups: dict[str, Any] = dict(base_value)
             for gkey, gval in overlay_value.items():
-                if gkey in merged_groups and _is_sequence(merged_groups[gkey]) and _is_sequence(gval):
+                if (
+                    gkey in merged_groups
+                    and _is_sequence(merged_groups[gkey])
+                    and _is_sequence(gval)
+                ):
                     merged_groups[gkey] = merge_dependency_lists(
                         list(merged_groups[gkey]), list(gval)
                     )
-                elif gkey in merged_groups and _is_mapping(merged_groups[gkey]) and _is_mapping(gval):
-                    merged_groups[gkey] = merge_tables(dict(merged_groups[gkey]), dict(gval))
+                elif (
+                    gkey in merged_groups
+                    and _is_mapping(merged_groups[gkey])
+                    and _is_mapping(gval)
+                ):
+                    merged_groups[gkey] = merge_tables(
+                        dict(merged_groups[gkey]), dict(gval)
+                    )
                 else:
                     merged_groups[gkey] = gval
             result[key] = merged_groups

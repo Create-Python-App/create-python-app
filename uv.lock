@@ -10,12 +10,12 @@ members = [
 
 [manifest.dependency-groups]
 dev = [
-    { name = "pre-commit", specifier = ">=4.0.0" },
-    { name = "pyright", specifier = ">=1.1.400" },
+    { name = "pre-commit", specifier = ">=4.6.0" },
+    { name = "pyright", specifier = ">=1.1.411" },
     { name = "pytest", specifier = ">=8.0.0" },
-    { name = "pytest-asyncio", specifier = ">=0.25.0" },
-    { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "ruff", specifier = ">=0.12.0" },
+    { name = "pytest-asyncio", specifier = ">=1.4.0" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "ruff", specifier = ">=0.15.21" },
 ]
 
 [[package]]

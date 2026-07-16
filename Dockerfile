@@ -8,11 +8,11 @@ ARG VERSION=latest
 
 # hadolint ignore=DL3013
 RUN useradd --create-home --uid 1000 --shell /bin/bash app \
-  && if [ "$VERSION" = "latest" ]; then \
-       pip install --no-cache-dir create-awesome-python-app; \
-     else \
-       pip install --no-cache-dir "create-awesome-python-app==${VERSION}"; \
-     fi
+    && if [ "$VERSION" = "latest" ]; then \
+        pip install --no-cache-dir create-awesome-python-app; \
+    else \
+        pip install --no-cache-dir "create-awesome-python-app==${VERSION}"; \
+    fi
 
 USER app
 WORKDIR /home/app

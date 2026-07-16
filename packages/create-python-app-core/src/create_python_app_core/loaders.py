@@ -45,9 +45,7 @@ def render_template(content: str, context: dict[str, Any], *, path: str) -> str:
     try:
         return _JINJA.from_string(content).render(**context)
     except TemplateError as exc:
-        raise ScaffoldAbortedError(
-            f"Template render failed for {path}: {exc}"
-        ) from exc
+        raise ScaffoldAbortedError(f"Template render failed for {path}: {exc}") from exc
 
 
 def _write_bytes(target: Path, data: bytes, *, append: bool) -> None:
@@ -128,9 +126,7 @@ def copy_tree(
         if path.is_dir():
             continue
         rel = path.relative_to(src)
-        result = process_file(
-            path, dest, rel, context=ctx, overwrite=overwrite
-        )
+        result = process_file(path, dest, rel, context=ctx, overwrite=overwrite)
         if result is not None:
             written.append(result)
     return written
@@ -146,9 +142,7 @@ def load_layer(
 ) -> list[Path]:
     """Load one template/extension layer into dest."""
     template_root = get_template_dir_path(source, root)
-    return copy_tree(
-        template_root, dest, overwrite=overwrite, context=context
-    )
+    return copy_tree(template_root, dest, overwrite=overwrite, context=context)
 
 
 def merge_layers(
@@ -160,7 +154,5 @@ def merge_layers(
     """Apply layers in order: template → addons → extend (later wins for copies)."""
     written: list[Path] = []
     for source, root in layers:
-        written.extend(
-            load_layer(source, root, dest, overwrite=True, context=context)
-        )
+        written.extend(load_layer(source, root, dest, overwrite=True, context=context))
     return written

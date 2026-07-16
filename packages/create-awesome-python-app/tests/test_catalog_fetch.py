@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from create_awesome_python_app.catalog import (
     DEFAULT_CATALOG_URL,
     catalog_cache_path,
@@ -41,7 +40,7 @@ def test_get_catalog_data_fetches_and_caches(tmp_path: Path) -> None:
         def read(self) -> bytes:
             return json.dumps(payload).encode("utf-8")
 
-        def __enter__(self) -> "FakeResponse":
+        def __enter__(self) -> FakeResponse:
             return self
 
         def __exit__(self, *args: object) -> None:

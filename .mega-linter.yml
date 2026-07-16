@@ -1,5 +1,9 @@
 # MegaLinter — Python-first config for create-python-app
 # Adapted from Create-Node-App/create-node-app .mega-linter.yml
+#
+# Project standards (AGENTS.md): Ruff + Pyright. Disable overlapping
+# MegaLinter Python tools that duplicate those checks or fail without
+# the workspace venv (pylint import-error, etc.).
 
 APPLY_FIXES: all
 
@@ -12,11 +16,20 @@ DISABLE_LINTERS:
   - JSON_V8R
   - REPOSITORY_CHECKOV
   - REPOSITORY_GRYPE
-  - REPOSITORY_OSV_SCANNER # Handled later by dedicated workflow (#51)
+  - REPOSITORY_OSV_SCANNER # Handled by dedicated workflow
   - REPOSITORY_TRIVY
   - SPELL_CSPELL
   - SPELL_LYCHEE
   - YAML_V8R
+  # Overlap with Ruff / Pyright (project tooling)
+  - PYTHON_PYLINT
+  - PYTHON_FLAKE8
+  - PYTHON_BLACK
+  - PYTHON_ISORT
+  - PYTHON_MYPY
+  - PYTHON_BANDIT
+  # Badge / package pages can 404 briefly after first publish
+  - MARKDOWN_MARKDOWN_LINK_CHECK
 
 SHOW_ELAPSED_TIME: true
-FILTER_REGEX_EXCLUDE: (uv\.lock)
+FILTER_REGEX_EXCLUDE: (uv\.lock|megalinter-reports/)

@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from create_python_app_core.errors import ScaffoldAbortedError
 from create_python_app_core.loaders import merge_layers, process_file, render_template
 from create_python_app_core.paths import ResolvedSource

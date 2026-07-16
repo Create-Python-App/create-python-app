@@ -1,6 +1,5 @@
-from typer.testing import CliRunner
-
 from create_awesome_python_app.cli import cache_app
+from typer.testing import CliRunner
 
 runner = CliRunner()
 

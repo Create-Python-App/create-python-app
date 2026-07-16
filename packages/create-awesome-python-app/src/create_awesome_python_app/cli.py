@@ -103,9 +103,7 @@ def scaffold(
     if offline:
         pass  # passed to core
 
-    want_interactive = (
-        interactive if interactive is not None else (not _in_ci())
-    )
+    want_interactive = interactive if interactive is not None else (not _in_ci())
     if want_interactive and not template:
         try:
             import questionary
