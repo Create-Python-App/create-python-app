@@ -21,13 +21,15 @@ DISABLE_LINTERS:
   - SPELL_CSPELL
   - SPELL_LYCHEE
   - YAML_V8R
-  # Overlap with Ruff / Pyright (project tooling)
+  # Overlap with Ruff / Pyright (project tooling + dedicated type-check.yml)
   - PYTHON_PYLINT
   - PYTHON_FLAKE8
   - PYTHON_BLACK
   - PYTHON_ISORT
   - PYTHON_MYPY
+  - PYTHON_PYRIGHT
   - PYTHON_BANDIT
+  - PYTHON_RUFF
   # Badge / package pages can 404 briefly after first publish
   - MARKDOWN_MARKDOWN_LINK_CHECK
 
