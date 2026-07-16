@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import pytest
 from create_awesome_python_app.catalog import (
+    CUSTOM_TEMPLATE_SENTINEL,
     CatalogResolutionError,
+    build_template_choices,
     is_url_like,
     resolve_catalog_spec,
     resolve_catalog_specs,
+    short_category_label,
 )
 
 SAMPLE_CATALOG = {
@@ -61,3 +64,40 @@ def test_resolve_catalog_specs_batch() -> None:
     )
     assert len(resolved) == 2
     assert resolved[1] == "file:///ext"
+
+
+def test_short_category_label_matches_cna_style() -> None:
+    assert short_category_label("Backend Applications") == "Backend"
+    assert short_category_label("User Acceptance Testing") == "UAT"
+
+
+def test_build_template_choices_are_searchable() -> None:
+    catalog = {
+        "categories": [
+            {
+                "slug": "backend-applications",
+                "name": "Backend Applications",
+            }
+        ],
+        "templates": [
+            {
+                "slug": "fastapi-starter",
+                "name": "FastAPI Starter",
+                "description": "Async API with OpenAPI docs",
+                "url": "file:///templates/fastapi",
+                "category": "backend-applications",
+                "labels": ["FastAPI", "API", "uv"],
+            }
+        ],
+    }
+
+    choices = build_template_choices(catalog)
+    first = choices[0]
+    assert first.value == "file:///templates/fastapi"
+    assert "FastAPI Starter" in first.title
+    assert "OpenAPI" in first.title
+    assert "uv" in first.title
+    assert "openapi" in first.search
+    assert "backend" in first.search
+    assert "uv" in first.search
+    assert choices[-1].value == CUSTOM_TEMPLATE_SENTINEL
