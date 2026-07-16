@@ -13,10 +13,35 @@ Configure secrets under **Settings → Secrets and variables → Actions**.
 
 ## PyPI Trusted Publishing
 
-1. On PyPI, add a Trusted Publisher for project `create-awesome-python-app`
-2. Owner/repo: `Create-Python-App/create-python-app`
-3. Workflow name: `publish.yml`
-4. Environment: (optional)
+Configure **two** pending Trusted Publishers on PyPI (same workflow publishes both packages):
+
+### `create-python-app-core`
+
+1. Owner: `Create-Python-App`
+2. Repository: `create-python-app`
+3. Workflow: `publish.yml`
+4. Environment: (leave empty unless you use one)
+
+### `create-awesome-python-app`
+
+Same owner/repo/workflow as above.
+
+On the first tag `create-awesome-python-app@0.1.0`, OIDC creates the projects and uploads sdists/wheels for both packages.
+
+## Cutting a release
+
+1. Bump versions in both package `pyproject.toml` files and `__version__` / `_version.py`
+2. Update `CHANGELOG.md`
+3. Merge to `main`
+4. Tag and push:
+
+```bash
+git tag create-awesome-python-app@0.1.0
+git push origin create-awesome-python-app@0.1.0
+```
+
+5. Confirm the Release workflow published both packages
+6. Smoke: `uvx create-awesome-python-app@0.1.0 --help`
 
 ## Docker Hub
 

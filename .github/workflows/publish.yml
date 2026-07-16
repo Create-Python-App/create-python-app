@@ -24,12 +24,25 @@ jobs:
         with:
           python-version-file: .python-version
       - run: uv sync --group dev
-      - run: uv build --package create-awesome-python-app
+      # Publish core first so the CLI wheel can resolve create-python-app-core on PyPI.
+      - name: Build packages
+        run: |
+          uv build --package create-python-app-core
+          uv build --package create-awesome-python-app
+          ls -la dist/
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          body: |
+            First public release. Install with:
+
+            ```bash
+            uvx create-awesome-python-app@0.1.0 --help
+            ```
+
+            Catalog: https://github.com/Create-Python-App/cpa-templates
       - name: Publish to PyPI (OIDC)
         if: startsWith(github.ref, 'refs/tags/')
         uses: pypa/gh-action-pypi-publish@release/v1

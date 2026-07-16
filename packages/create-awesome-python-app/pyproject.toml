@@ -1,15 +1,22 @@
 [project]
 name = "create-awesome-python-app"
-version = "0.0.0"
-description = "Composable scaffolding CLI for production-ready Python apps (stub)"
+version = "0.1.0"
+description = "Composable scaffolding CLI for production-ready Python apps"
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
 dependencies = [
-    "create-python-app-core",
+    "create-python-app-core>=0.1.0",
     "questionary>=2.1.1",
     "rich>=15.0.0",
     "typer>=0.27.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Create-Python-App/create-python-app"
+Repository = "https://github.com/Create-Python-App/create-python-app"
+Issues = "https://github.com/Create-Python-App/create-python-app/issues"
+Changelog = "https://github.com/Create-Python-App/create-python-app/blob/main/CHANGELOG.md"
 
 [project.scripts]
 create-awesome-python-app = "create_awesome_python_app.cli:main"

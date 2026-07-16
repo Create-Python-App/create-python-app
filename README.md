@@ -3,6 +3,7 @@
 [![CI Tests](https://github.com/Create-Python-App/create-python-app/actions/workflows/test.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/test.yml)
 [![Lint](https://github.com/Create-Python-App/create-python-app/actions/workflows/lint.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/lint.yml)
 [![Typecheck](https://github.com/Create-Python-App/create-python-app/actions/workflows/type-check.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/type-check.yml)
+[![PyPI](https://img.shields.io/pypi/v/create-awesome-python-app.svg)](https://pypi.org/project/create-awesome-python-app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 <!-- PyPI / coverage badges activate after first publish -->
@@ -24,15 +25,19 @@ The CLI fetches the catalog from:
 
 Override with `CPA_CATALOG_URL` for forks or local testing (`file://` supported).
 
-## Install (preview)
-
-Once published to PyPI:
+## Install
 
 ```bash
 uvx create-awesome-python-app@latest my-app
 ```
 
-Until the first release, use the workspace CLI:
+Or pin a version:
+
+```bash
+uvx create-awesome-python-app@0.1.0 my-app --template fastapi-starter --no-interactive
+```
+
+From this workspace (development):
 
 ```bash
 uv sync
