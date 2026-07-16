@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from create_python_app_core import create_python_app
 
 
