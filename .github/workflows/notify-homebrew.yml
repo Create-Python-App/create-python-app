@@ -1,4 +1,8 @@
 name: Notify Homebrew tap
+
+# Triggers on release tags for the CLI package. Sends a
+# repository_dispatch event to Create-Python-App/homebrew-tap so its
+# update-formula workflow can bump the formula and push it.
 on:
   push:
     tags:
@@ -6,13 +10,42 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Package version"
+        description: "Package version (e.g. 0.1.0)"
         required: true
+
+permissions:
+  contents: read
+
 jobs:
   notify:
+    name: Dispatch to homebrew-tap
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch to homebrew-tap
+      - name: Resolve version
+        id: version
+        env:
+          TAG_REF: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          echo "Send repository_dispatch to Create-Python-App/homebrew-tap when it exists"
-          echo "Secret: HOMEBREW_TAP_TOKEN"
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="${TAG_REF#create-awesome-python-app@}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch repository event
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN secret is not set" >&2
+            exit 1
+          fi
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/Create-Python-App/homebrew-tap/dispatches \
+            -f "event_type=new-release" \
+            -f "client_payload[version]=$VERSION"
