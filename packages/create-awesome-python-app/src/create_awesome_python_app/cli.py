@@ -339,6 +339,23 @@ def scaffold(
             console.print("[red]questionary not available[/red]")
             raise typer.Exit(1) from None
 
+    from create_awesome_python_app.catalog import (
+        IncompatibleExtensionsError as CatalogIncompatibleExtensionsError,
+    )
+    from create_awesome_python_app.catalog import (
+        get_catalog_data,
+        validate_extension_compatibility,
+    )
+
+    try:
+        validate_extension_compatibility(
+            [*(addons or []), *(extend or [])],
+            catalog=interactive_catalog or get_catalog_data(),
+        )
+    except CatalogIncompatibleExtensionsError as err:
+        console.print(f"[red]{err}[/red]")
+        raise typer.Exit(2) from err
+
     if want_interactive:
         try:
             from create_awesome_python_app.catalog import (

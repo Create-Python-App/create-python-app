@@ -34,4 +34,8 @@ class NonEmptyTargetDirectoryError(CpaError):
     code = "CPA_NON_EMPTY_TARGET_DIR"
 
 
+class IncompatibleExtensionsError(CpaError):
+    code = "CPA_INCOMPATIBLE_EXTENSIONS"
+
+
 NON_EMPTY_DIR_ERROR_CODE = NonEmptyTargetDirectoryError.code

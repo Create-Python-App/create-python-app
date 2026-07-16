@@ -168,3 +168,57 @@ def test_pin_appends_ref_to_template_url(tmp_path: Path, monkeypatch) -> None:
     options = captured["options"]
     assert isinstance(options, dict)
     assert options["template"] == f"file://{tpl}?ref=abc123"
+
+
+def test_incompatible_addons_fail_fast(tmp_path: Path, monkeypatch) -> None:
+    tpl = tmp_path / "tpl"
+    tpl.mkdir()
+    catalog = {
+        "templates": [
+            {"slug": "fastapi-starter", "url": f"file://{tpl}"},
+        ],
+        "extensions": [
+            {
+                "slug": "saga",
+                "url": "file:///ext/saga",
+                "incompatibleWith": ["thunk"],
+            },
+            {
+                "slug": "thunk",
+                "url": "file:///ext/thunk",
+                "incompatibleWith": ["saga"],
+            },
+        ],
+    }
+
+    async def fake_check_for_latest_version(_package_name):
+        return None
+
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.check_for_latest_version",
+        fake_check_for_latest_version,
+    )
+    monkeypatch.setattr(
+        "create_awesome_python_app.catalog.get_catalog_data",
+        lambda: catalog,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--template",
+            "fastapi-starter",
+            "--addons",
+            "saga",
+            "--addons",
+            "thunk",
+            "--no-install",
+            "--no-interactive",
+            "api",
+        ],
+    )
+
+    text = (result.stdout or "") + (result.stderr or "")
+    assert result.exit_code == 2
+    assert "Incompatible extension combination" in text
+    assert "saga" in text
