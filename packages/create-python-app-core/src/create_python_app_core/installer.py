@@ -8,7 +8,11 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from create_python_app_core.config import assert_directory_is_empty, load_cpa_config
+from create_python_app_core.config import (
+    CpaConfig,
+    assert_directory_is_empty,
+    load_cpa_config,
+)
 from create_python_app_core.errors import CpaError, ScaffoldAbortedError
 from create_python_app_core.git_cache import download_repository
 from create_python_app_core.loaders import merge_layers
@@ -29,6 +33,31 @@ def uv_sync(dest: Path) -> None:
     _run(["uv", "sync"], cwd=dest)
 
 
+def _config_path(source: ResolvedSource, root: Path) -> Path:
+    cfg_path = root / "cpa.config.json"
+    if not cfg_path.is_file() and source.subdir:
+        cfg_path = root / source.subdir / "cpa.config.json"
+    return cfg_path
+
+
+def build_scaffold_context(
+    project_name: str,
+    configs: list[CpaConfig],
+    options: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build Jinja context: projectName + customOption defaults + --set overrides."""
+    context: dict[str, Any] = {"projectName": project_name}
+    for cfg in configs:
+        for opt in cfg.custom_options:
+            if opt.key not in context and opt.default is not None:
+                context[opt.key] = opt.default
+    if options:
+        set_map = options.get("set") or {}
+        if isinstance(set_map, dict):
+            context.update(set_map)
+    return context
+
+
 def scaffold_project(
     project_directory: str,
     *,
@@ -43,24 +72,22 @@ def scaffold_project(
     options: dict[str, Any] | None = None,
 ) -> Path:
     """Create a project directory from template + addon layers."""
-    _ = options
     dest = Path(project_directory).expanduser().resolve()
     assert_directory_is_empty(dest, force=force)
     dest.mkdir(parents=True, exist_ok=True)
 
     specs = [template, *(addons or []), *(extend or [])]
     layers: list[tuple[ResolvedSource, Path]] = []
+    configs: list[CpaConfig] = []
     try:
         for spec in specs:
             source = resolve_source(spec, cache_dir=cache_dir)
             root = download_repository(source, offline=offline, cache_root=cache_dir)
             layers.append((source, root))
-            cfg_path = root / "cpa.config.json"
-            if not cfg_path.is_file() and source.subdir:
-                cfg_path = root / source.subdir / "cpa.config.json"
-            load_cpa_config(cfg_path)
+            configs.append(load_cpa_config(_config_path(source, root)))
 
-        merge_layers(layers, dest)
+        context = build_scaffold_context(dest.name, configs, options)
+        merge_layers(layers, dest, context=context)
 
         if install and (dest / "pyproject.toml").is_file():
             uv_sync(dest)
