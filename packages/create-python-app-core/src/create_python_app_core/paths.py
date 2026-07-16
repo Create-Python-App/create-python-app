@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
+from urllib.request import url2pathname
 
 from create_python_app_core.errors import CpaError
 
@@ -54,10 +55,14 @@ def resolve_source(spec: str, *, cache_dir: Path | None = None) -> ResolvedSourc
     if spec.startswith("file://"):
         parsed = urlparse(spec)
         query = parse_qs(parsed.query)
-        path = Path(unquote(parsed.path))
+        raw_path = unquote(parsed.path or "/")
         if parsed.netloc and parsed.netloc != "localhost":
             # file://host/path — uncommon; treat netloc+path
-            path = Path(f"/{parsed.netloc}{unquote(parsed.path)}")
+            raw_path = f"//{parsed.netloc}{raw_path}"
+        path_text = url2pathname(raw_path)
+        if os.name == "nt" and re.match(r"^/[A-Za-z]:", path_text):
+            path_text = path_text[1:]
+        path = Path(path_text)
         subdir = (query.get("subdir") or [None])[0]
         return ResolvedSource(
             kind="file",
