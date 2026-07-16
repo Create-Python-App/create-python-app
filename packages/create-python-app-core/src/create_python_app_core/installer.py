@@ -14,7 +14,7 @@ from create_python_app_core.config import (
     load_cpa_config,
 )
 from create_python_app_core.errors import CpaError, ScaffoldAbortedError
-from create_python_app_core.git_cache import download_repository
+from create_python_app_core.git_cache import RefreshMode, download_repository
 from create_python_app_core.loaders import merge_layers
 from create_python_app_core.paths import ResolvedSource, resolve_source
 
@@ -67,6 +67,7 @@ def scaffold_project(
     force: bool = False,
     install: bool = True,
     offline: bool = False,
+    refresh: RefreshMode | None = None,
     keep_on_failure: bool = False,
     cache_dir: Path | None = None,
     options: dict[str, Any] | None = None,
@@ -82,7 +83,12 @@ def scaffold_project(
     try:
         for spec in specs:
             source = resolve_source(spec, cache_dir=cache_dir)
-            root = download_repository(source, offline=offline, cache_root=cache_dir)
+            root = download_repository(
+                source,
+                offline=offline,
+                refresh=refresh,
+                cache_root=cache_dir,
+            )
             layers.append((source, root))
             configs.append(load_cpa_config(_config_path(source, root)))
 

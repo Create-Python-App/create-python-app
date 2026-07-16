@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from create_python_app_core._version import __version__
+from create_python_app_core.git_cache import RefreshMode
 
 CPA_USER_AGENT = (
     f"create-python-app-core/{__version__} "
@@ -84,6 +85,10 @@ async def create_python_app(
         options = await transform_options(options)
 
     cache = options.get("cache_dir")
+    refresh = options.get("refresh")
+    refresh_mode: RefreshMode | None = (
+        refresh if refresh in ("always", "stale", "manual") else None
+    )
     scaffold_project(
         project_directory,
         template=str(options.get("template") or ""),
@@ -92,6 +97,7 @@ async def create_python_app(
         force=bool(options.get("force", False)),
         install=bool(options.get("install", True)),
         offline=bool(options.get("offline", False)),
+        refresh=refresh_mode,
         keep_on_failure=bool(options.get("keep_on_failure", False)),
         cache_dir=Path(cache) if cache else None,
         options=options,

@@ -20,6 +20,7 @@ from create_python_app_core import (
     print_env_info,
     resolve_source,
 )
+from create_python_app_core.git_cache import RefreshMode
 from rich.console import Console
 
 from create_awesome_python_app import __version__
@@ -57,6 +58,16 @@ def _parse_set_options(set_opt: list[str] | None) -> dict[str, str]:
     return set_map
 
 
+def _normalize_refresh(refresh: str | None) -> RefreshMode | None:
+    if refresh == "always":
+        return "always"
+    if refresh == "stale":
+        return "stale"
+    if refresh == "manual":
+        return "manual"
+    return None
+
+
 def _stringify_option_value(value: Any) -> str:
     if value is None:
         return ""
@@ -88,12 +99,18 @@ def _prompt_custom_options(
     set_map: dict[str, str],
     cache_dir: Path | None,
     offline: bool,
+    refresh: str | None,
     registry_options: list[dict[str, Any]] | None = None,
 ) -> dict[str, str]:
     import questionary
 
     source = resolve_source(template, cache_dir=cache_dir)
-    root = download_repository(source, offline=offline, cache_root=cache_dir)
+    root = download_repository(
+        source,
+        offline=offline,
+        refresh=_normalize_refresh(refresh),
+        cache_root=cache_dir,
+    )
     try:
         config = load_cpa_config(_template_config_path(source.subdir, root))
     except ConfigParseError as err:
@@ -189,14 +206,22 @@ def scaffold(
             la(template)
         raise typer.Exit(0)
 
+    effective_refresh = _normalize_refresh(refresh)
+    if refresh and effective_refresh is None:
+        console.print(
+            "[red]Invalid --refresh mode: "
+            f"'{refresh}'. Use one of: always, stale, manual.[/red]"
+        )
+        raise typer.Exit(2)
+
     # env wiring (#36)
     if no_cache:
         os.environ["CPA_NO_CATALOG_CACHE"] = "1"
-        os.environ["CPA_REFRESH"] = "always"
+        effective_refresh = effective_refresh or "always"
     if cache_dir:
         os.environ["CPA_CACHE_DIR"] = str(cache_dir)
-    if refresh:
-        os.environ["CPA_REFRESH"] = refresh
+    if effective_refresh:
+        os.environ["CPA_REFRESH"] = effective_refresh
     if offline:
         pass  # passed to core
 
@@ -339,6 +364,7 @@ def scaffold(
                 set_map=set_map,
                 cache_dir=cache_dir,
                 offline=offline,
+                refresh=effective_refresh,
                 registry_options=registry_options,
             )
         except ImportError:
@@ -371,6 +397,7 @@ def scaffold(
                 "force": force,
                 "verbose": verbose,
                 "offline": offline,
+                "refresh": effective_refresh,
                 "keep_on_failure": keep_on_failure,
                 "cache_dir": str(cache_dir) if cache_dir else None,
                 "set": set_map,
