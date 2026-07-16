@@ -38,6 +38,7 @@ from create_python_app_core.paths import (
     get_template_dir_path,
     resolve_source,
 )
+from create_python_app_core.pyproject_merge import merge_pyproject_text
 
 __all__ = [
     "__version__",
@@ -56,6 +57,7 @@ __all__ = [
     "write_cache_meta",
     "merge_layers",
     "load_layer",
+    "merge_pyproject_text",
     "get_template_dir_path",
     "CpaConfig",
     "CpaCustomOption",
