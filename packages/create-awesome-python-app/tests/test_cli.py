@@ -8,7 +8,7 @@ def test_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     combined = result.stdout + result.stderr
-    assert "0.0.0" in combined
+    assert "0.1.0" in combined
 
 
 def test_help() -> None:
