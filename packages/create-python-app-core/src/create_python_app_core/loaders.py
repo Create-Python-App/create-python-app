@@ -10,6 +10,7 @@ from jinja2 import Environment, StrictUndefined, TemplateError
 
 from create_python_app_core.errors import ManifestLoadError, ScaffoldAbortedError
 from create_python_app_core.paths import ResolvedSource, get_template_dir_path
+from create_python_app_core.pyproject_merge import merge_pyproject_into
 
 _JINJA = Environment(
     undefined=StrictUndefined,
@@ -76,28 +77,37 @@ def process_file(
     out_rel = _output_rel(rel)
     target = dest_root / out_rel
 
-    if mode == "copy":
-        if target.exists() and not overwrite:
-            return None
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, target)
-        return target
-
     if mode == "append":
         content = src.read_text(encoding="utf-8")
         _write_text(target, content, append=True)
         return target
 
-    # template modes
-    rendered = render_template(
-        src.read_text(encoding="utf-8"),
-        context,
-        path=str(rel),
-    )
-    append = mode == "appendTemplate"
-    if target.exists() and not overwrite and not append:
+    if mode in {"copyTemplate", "appendTemplate"}:
+        rendered = render_template(
+            src.read_text(encoding="utf-8"),
+            context,
+            path=str(rel),
+        )
+        append = mode == "appendTemplate"
+        if out_rel.name == "pyproject.toml" and not append:
+            text = merge_pyproject_into(target, rendered)
+            _write_text(target, text, append=False)
+            return target
+        if target.exists() and not overwrite and not append:
+            return None
+        _write_text(target, rendered, append=append)
+        return target
+
+    # plain copy
+    if out_rel.name == "pyproject.toml":
+        text = merge_pyproject_into(target, src.read_text(encoding="utf-8"))
+        _write_text(target, text, append=False)
+        return target
+
+    if target.exists() and not overwrite:
         return None
-    _write_text(target, rendered, append=append)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, target)
     return target
 
 
