@@ -39,6 +39,18 @@ class TemplateChoice:
     search: str
 
 
+@dataclass(frozen=True)
+class ExtensionChoice:
+    """Interactive extension choice grouped by catalog category."""
+
+    title: str
+    value: str
+    search: str
+    category_slug: str
+    category_name: str
+    category_order: int
+
+
 class CatalogResolutionError(ValueError):
     """Raised when a template or extension slug is not in the catalog."""
 
@@ -113,6 +125,32 @@ def _search_text(template: dict[str, Any], category_name: str) -> str:
     return " ".join(str(token) for token in tokens if token).lower()
 
 
+def _catalog_category_order(data: dict[str, Any]) -> dict[str, int]:
+    return {
+        str(category.get("slug", "")): index
+        for index, category in enumerate(data.get("categories", []))
+    }
+
+
+def _entry_type_values(entry: dict[str, Any]) -> list[str]:
+    raw_type = entry.get("type", [])
+    if isinstance(raw_type, str):
+        return [raw_type]
+    if isinstance(raw_type, list):
+        return [str(item) for item in raw_type]
+    return []
+
+
+def find_template_by_url(
+    data: dict[str, Any], template_url: str
+) -> dict[str, Any] | None:
+    """Return the catalog template entry for a resolved template URL."""
+    for template in data.get("templates", []):
+        if isinstance(template, dict) and template.get("url") == template_url:
+            return template
+    return None
+
+
 def build_template_choices(data: dict[str, Any]) -> list[TemplateChoice]:
     """Build CNA-style searchable template choices for interactive mode."""
     categories = _category_map(data)
@@ -163,6 +201,67 @@ def build_template_choices(data: dict[str, Any]) -> list[TemplateChoice]:
         )
     )
     return choices
+
+
+def build_extension_choices(
+    data: dict[str, Any], template_url: str
+) -> list[ExtensionChoice]:
+    """Build CNA-style extension choices compatible with the selected template."""
+    categories = _category_map(data)
+    category_order = _catalog_category_order(data)
+    template = find_template_by_url(data, template_url)
+    template_types = _entry_type_values(template or {})
+    if not template_types:
+        template_types = ["custom"]
+
+    choices: list[ExtensionChoice] = []
+    for extension in data.get("extensions", data.get("addons", [])):
+        if not isinstance(extension, dict):
+            continue
+        extension_types = _entry_type_values(extension)
+        if not any(
+            ext_type in template_types or ext_type == "all"
+            for ext_type in extension_types
+        ):
+            continue
+        extension_url = str(extension.get("url", ""))
+        if not extension_url:
+            continue
+        category_slug = str(extension.get("category", "custom"))
+        category_name = categories.get(category_slug, category_slug)
+        labels = extension.get("labels", [])
+        label_suffix = ""
+        if isinstance(labels, list) and labels:
+            label_suffix = " · " + ", ".join(str(label) for label in labels[:3])
+        description = str(extension.get("description", "")).strip()
+        description_suffix = f" — {description}" if description else ""
+        slug = str(extension.get("slug", ""))
+        title = f"{extension.get('name', slug)} ({slug}){label_suffix}"
+        choices.append(
+            ExtensionChoice(
+                title=f"{title}{description_suffix}",
+                value=extension_url,
+                search=_search_text(extension, category_name),
+                category_slug=category_slug,
+                category_name=category_name,
+                category_order=category_order.get(category_slug, len(category_order)),
+            )
+        )
+
+    return sorted(
+        choices,
+        key=lambda choice: (choice.category_order, choice.title.lower()),
+    )
+
+
+def group_extension_choices(
+    choices: list[ExtensionChoice],
+) -> dict[str, list[ExtensionChoice]]:
+    """Group extension choices by category while preserving sorted order."""
+    grouped: dict[str, list[ExtensionChoice]] = {}
+    for choice in choices:
+        grouped.setdefault(choice.category_slug, []).append(choice)
+    return grouped
 
 
 DEFAULT_CATALOG_URL = "https://raw.githubusercontent.com/Create-Python-App/cpa-templates/main/templates.json"

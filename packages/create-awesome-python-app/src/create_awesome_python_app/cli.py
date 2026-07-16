@@ -104,6 +104,7 @@ def scaffold(
         pass  # passed to core
 
     want_interactive = interactive if interactive is not None else (not _in_ci())
+    interactive_catalog: dict[str, object] | None = None
     if want_interactive and not template:
         try:
             import questionary
@@ -114,8 +115,8 @@ def scaffold(
                 get_catalog_data,
             )
 
-            catalog = get_catalog_data()
-            template_choices = build_template_choices(catalog)
+            interactive_catalog = get_catalog_data()
+            template_choices = build_template_choices(interactive_catalog)
             choice_by_title = {
                 choice.title: choice.value for choice in template_choices
             }
@@ -157,6 +158,58 @@ def scaffold(
     except CatalogResolutionError as err:
         console.print(f"[red]{err}[/red]")
         raise typer.Exit(2) from err
+
+    if want_interactive and not addons:
+        try:
+            import questionary
+            from questionary import Choice
+
+            from create_awesome_python_app.catalog import (
+                build_extension_choices,
+                get_catalog_data,
+                group_extension_choices,
+            )
+
+            interactive_catalog = interactive_catalog or get_catalog_data()
+            extension_choices = build_extension_choices(interactive_catalog, template)
+            grouped_extensions = group_extension_choices(extension_choices)
+            if grouped_extensions:
+                category_choices = [
+                    Choice(
+                        title=(
+                            f"{choices[0].category_name} "
+                            f"({len(choices)} extension"
+                            f"{'s' if len(choices) != 1 else ''})"
+                        ),
+                        value=category_slug,
+                    )
+                    for category_slug, choices in grouped_extensions.items()
+                ]
+                selected_categories = questionary.checkbox(
+                    "Which kinds of extensions do you need?",
+                    choices=category_choices,
+                    qmark="?",
+                    pointer=">",
+                ).ask()
+                selected_addons: list[str] = []
+                for category_slug in selected_categories or []:
+                    choices = grouped_extensions.get(str(category_slug), [])
+                    if not choices:
+                        continue
+                    picked = questionary.checkbox(
+                        f"{choices[0].category_name} extensions",
+                        choices=[
+                            Choice(title=choice.title, value=choice.value)
+                            for choice in choices
+                        ],
+                        qmark="?",
+                        pointer=">",
+                    ).ask()
+                    selected_addons.extend(str(item) for item in picked or [])
+                addons = selected_addons
+        except ImportError:
+            console.print("[red]questionary not available[/red]")
+            raise typer.Exit(1) from None
 
     if pin and "://" in template and "ref=" not in template:
         sep = "&" if "?" in template else "?"

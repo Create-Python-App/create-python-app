@@ -6,7 +6,9 @@ import pytest
 from create_awesome_python_app.catalog import (
     CUSTOM_TEMPLATE_SENTINEL,
     CatalogResolutionError,
+    build_extension_choices,
     build_template_choices,
+    group_extension_choices,
     is_url_like,
     resolve_catalog_spec,
     resolve_catalog_specs,
@@ -101,3 +103,96 @@ def test_build_template_choices_are_searchable() -> None:
     assert "backend" in first.search
     assert "uv" in first.search
     assert choices[-1].value == CUSTOM_TEMPLATE_SENTINEL
+
+
+def test_build_extension_choices_filters_by_template_type() -> None:
+    catalog = {
+        "categories": [
+            {"slug": "ci", "name": "CI"},
+            {"slug": "data", "name": "Data"},
+        ],
+        "templates": [
+            {
+                "slug": "fastapi-starter",
+                "name": "FastAPI Starter",
+                "url": "file:///templates/fastapi",
+                "type": "fastapi-backend",
+                "category": "backend-applications",
+            }
+        ],
+        "extensions": [
+            {
+                "slug": "github-setup",
+                "name": "GitHub Setup",
+                "description": "Actions and Dependabot",
+                "url": "file:///extensions/github",
+                "type": ["fastapi-backend"],
+                "category": "ci",
+                "labels": ["GitHub", "CI"],
+            },
+            {
+                "slug": "all-projects",
+                "name": "All Projects",
+                "url": "file:///extensions/all",
+                "type": ["all"],
+                "category": "data",
+            },
+            {
+                "slug": "django-only",
+                "name": "Django Only",
+                "url": "file:///extensions/django",
+                "type": ["django"],
+                "category": "ci",
+            },
+        ],
+    }
+
+    choices = build_extension_choices(catalog, "file:///templates/fastapi")
+
+    assert [choice.value for choice in choices] == [
+        "file:///extensions/github",
+        "file:///extensions/all",
+    ]
+    assert "dependabot" in choices[0].search
+    assert "github" in choices[0].title.lower()
+
+
+def test_group_extension_choices_preserves_category_order() -> None:
+    catalog = {
+        "categories": [
+            {"slug": "ci", "name": "CI"},
+            {"slug": "data", "name": "Data"},
+        ],
+        "templates": [
+            {
+                "slug": "fastapi-starter",
+                "name": "FastAPI Starter",
+                "url": "file:///templates/fastapi",
+                "type": "fastapi-backend",
+                "category": "backend-applications",
+            }
+        ],
+        "extensions": [
+            {
+                "slug": "postgres",
+                "name": "Postgres",
+                "url": "file:///extensions/postgres",
+                "type": ["fastapi-backend"],
+                "category": "data",
+            },
+            {
+                "slug": "github",
+                "name": "GitHub",
+                "url": "file:///extensions/github",
+                "type": ["fastapi-backend"],
+                "category": "ci",
+            },
+        ],
+    }
+
+    grouped = group_extension_choices(
+        build_extension_choices(catalog, "file:///templates/fastapi")
+    )
+
+    assert list(grouped) == ["ci", "data"]
+    assert grouped["ci"][0].value == "file:///extensions/github"
