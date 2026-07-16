@@ -28,7 +28,7 @@ app = typer.Typer(
     name="create-awesome-python-app",
     help="Composable scaffolding CLI for production-ready Python apps.",
     no_args_is_help=False,
-    add_completion=False,
+    add_completion=True,
 )
 cache_app = typer.Typer(help="Inspect and manage the local template cache")
 app.add_typer(cache_app, name="cache")
