@@ -20,6 +20,7 @@ jobs:
   notify:
     name: Dispatch to homebrew-tap
     runs-on: ubuntu-latest
+    environment: pypi
     steps:
       - name: Resolve version
         id: version

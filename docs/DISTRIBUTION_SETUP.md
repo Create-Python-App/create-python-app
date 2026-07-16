@@ -9,7 +9,9 @@
 | **AUR** | `publish-aur.yml` | `AUR_SSH_PRIVATE_KEY`, `AUR_REPO_TOKEN` |
 | **Homebrew** | `notify-homebrew.yml` → `homebrew-tap` | `HOMEBREW_TAP_TOKEN` |
 
-Configure secrets under **Settings → Secrets and variables → Actions**.
+Configure secrets under **Settings → Environments → `pypi` → Environment secrets**
+(not repository Action secrets). Release, Docker, AUR, and Homebrew jobs all use
+`environment: pypi`.
 
 ## PyPI Trusted Publishing
 
