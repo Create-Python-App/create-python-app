@@ -1,0 +1,22 @@
+# MegaLinter — Python-first config for create-python-app
+# Adapted from Create-Node-App/create-node-app .mega-linter.yml
+
+APPLY_FIXES: all
+
+DISABLE_LINTERS:
+  - ACTION_ZIZMOR
+  - COPYPASTE_JSCPD
+  - JAVASCRIPT_ES
+  - TYPESCRIPT_ES
+  - TYPESCRIPT_STANDARD
+  - JSON_V8R
+  - REPOSITORY_CHECKOV
+  - REPOSITORY_GRYPE
+  - REPOSITORY_OSV_SCANNER # Handled later by dedicated workflow (#51)
+  - REPOSITORY_TRIVY
+  - SPELL_CSPELL
+  - SPELL_LYCHEE
+  - YAML_V8R
+
+SHOW_ELAPSED_TIME: true
+FILTER_REGEX_EXCLUDE: (uv\.lock)
