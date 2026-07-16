@@ -121,6 +121,20 @@ def scaffold(
         console.print("[red]--template is required in non-interactive mode[/red]")
         raise typer.Exit(2)
 
+    from create_awesome_python_app.catalog import (
+        CatalogResolutionError,
+        resolve_catalog_spec,
+        resolve_catalog_specs,
+    )
+
+    try:
+        template = resolve_catalog_spec(template)
+        addons = resolve_catalog_specs(addons or [])
+        extend = resolve_catalog_specs(extend or [])
+    except CatalogResolutionError as err:
+        console.print(f"[red]{err}[/red]")
+        raise typer.Exit(2) from err
+
     if pin and "://" in template and "ref=" not in template:
         sep = "&" if "?" in template else "?"
         template = f"{template}{sep}ref={pin}"

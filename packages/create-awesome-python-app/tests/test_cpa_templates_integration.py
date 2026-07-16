@@ -30,6 +30,7 @@ def test_scaffold_fastapi_starter_from_cpa_templates(
 ) -> None:
     monkeypatch.setenv("CI", "1")
     monkeypatch.setenv("CPA_SKIP_GIT", "1")
+    monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
     dest = tmp_path / "api"
     template_url = f"file://{CPA_TEMPLATES_ROOT}?subdir=templates/fastapi-starter"
 
@@ -68,6 +69,115 @@ def test_scaffold_fastapi_starter_from_cpa_templates(
 
 
 @pytest.mark.skipif(
+    not _cpa_templates_available(),
+    reason="cpa-templates checkout not available (set CPA_TEMPLATES_ROOT)",
+)
+def test_scaffold_fastapi_starter_via_catalog_slug(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Scaffold using --template fastapi-starter slug (issue #160 / #161)."""
+    import json
+
+    monkeypatch.setenv("CI", "1")
+    monkeypatch.setenv("CPA_SKIP_GIT", "1")
+    monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
+    monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
+    catalog = {
+        "templates": [
+            {
+                "slug": "fastapi-starter",
+                "url": (
+                    f"file://{CPA_TEMPLATES_ROOT}"
+                    "?subdir=templates/fastapi-starter"
+                ),
+            }
+        ],
+        "extensions": [],
+        "categories": [],
+    }
+    catalog_file = tmp_path / "templates.json"
+    catalog_file.write_text(json.dumps(catalog), encoding="utf-8")
+    monkeypatch.setenv("CPA_CATALOG_URL", f"file://{catalog_file}")
+    monkeypatch.setenv("CPA_NO_CATALOG_CACHE", "1")
+
+    dest = tmp_path / "api-slug"
+    result = subprocess.run(
+        [
+            "uv",
+            "run",
+            "create-awesome-python-app",
+            "--template",
+            "fastapi-starter",
+            "--no-interactive",
+            "--no-install",
+            str(dest),
+        ],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (dest / "app" / "main.py").is_file()
+
+
+@pytest.mark.skipif(
+    not (_cpa_templates_available() and GITHUB_SETUP.is_dir()),
+    reason="cpa-templates extensions not available",
+)
+def test_scaffold_via_catalog_addon_slug(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+
+    monkeypatch.setenv("CI", "1")
+    monkeypatch.setenv("CPA_SKIP_GIT", "1")
+    monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
+    repo = CPA_TEMPLATES_ROOT
+    catalog = {
+        "templates": [
+            {
+                "slug": "fastapi-starter",
+                "url": f"file://{repo}?subdir=templates/fastapi-starter",
+            }
+        ],
+        "extensions": [
+            {
+                "slug": "github-setup",
+                "url": f"file://{repo}?subdir=extensions/github-setup",
+            }
+        ],
+        "categories": [],
+    }
+    catalog_file = tmp_path / "templates.json"
+    catalog_file.write_text(json.dumps(catalog), encoding="utf-8")
+    monkeypatch.setenv("CPA_CATALOG_URL", f"file://{catalog_file}")
+    monkeypatch.setenv("CPA_NO_CATALOG_CACHE", "1")
+
+    dest = tmp_path / "api-addon-slug"
+    result = subprocess.run(
+        [
+            "uv",
+            "run",
+            "create-awesome-python-app",
+            "--template",
+            "fastapi-starter",
+            "--addons",
+            "github-setup",
+            "--no-interactive",
+            "--no-install",
+            str(dest),
+        ],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (dest / ".github" / "workflows" / "ci.yml").is_file()
+
+
+@pytest.mark.skipif(
     not (_cpa_templates_available() and GITHUB_SETUP.is_dir()),
     reason="cpa-templates extensions not available",
 )
@@ -76,6 +186,7 @@ def test_scaffold_fastapi_with_github_setup_extension(
 ) -> None:
     monkeypatch.setenv("CI", "1")
     monkeypatch.setenv("CPA_SKIP_GIT", "1")
+    monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
     dest = tmp_path / "api-ext"
     repo = CPA_TEMPLATES_ROOT
     result = subprocess.run(

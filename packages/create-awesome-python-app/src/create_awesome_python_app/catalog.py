@@ -18,6 +18,43 @@ from create_awesome_python_app import __version__
 
 console = Console(stderr=True)
 
+
+class CatalogResolutionError(ValueError):
+    """Raised when a template or extension slug is not in the catalog."""
+
+    def __init__(self, spec: str) -> None:
+        self.spec = spec
+        super().__init__(
+            f"Invalid catalog slug: '{spec}'. "
+            "Run --list-templates / --list-addons or pass a full URL."
+        )
+
+
+def is_url_like(spec: str) -> bool:
+    """Return True when *spec* is already a URL or git SSH target."""
+    return "://" in spec or spec.startswith("git@")
+
+
+def resolve_catalog_spec(spec: str, *, catalog: dict[str, Any] | None = None) -> str:
+    """Resolve a catalog slug to its registry URL, or return URL-like specs unchanged."""
+    if is_url_like(spec):
+        return spec
+    data = catalog if catalog is not None else get_catalog_data()
+    for entry in data.get("templates", []):
+        if entry.get("slug") == spec:
+            return str(entry["url"])
+    for entry in data.get("extensions", data.get("addons", [])):
+        if entry.get("slug") == spec:
+            return str(entry["url"])
+    raise CatalogResolutionError(spec)
+
+
+def resolve_catalog_specs(
+    specs: list[str], *, catalog: dict[str, Any] | None = None
+) -> list[str]:
+    return [resolve_catalog_spec(spec, catalog=catalog) for spec in specs]
+
+
 DEFAULT_CATALOG_URL = "https://raw.githubusercontent.com/Create-Python-App/cpa-templates/main/templates.json"
 CACHE_TTL_SECONDS = 3600
 FETCH_TIMEOUT_SECONDS = 10
@@ -72,6 +109,8 @@ def _fetch_file_url(url: str) -> dict[str, Any]:
     base = source.local_path
     if source.subdir:
         base = base / source.subdir
+    if base.is_file():
+        return _read_json_file(base)
     catalog_file = base / "templates.json"
     if not catalog_file.is_file():
         raise FileNotFoundError(f"Catalog not found: {catalog_file}")
