@@ -24,4 +24,13 @@ make typecheck
 
 ## Templates
 
-Template bank work will live in `cpa-templates` (tracked in #44). Until then use `fixtures/`.
+Template and extension authoring lives in [`cpa-templates`](https://github.com/Create-Python-App/cpa-templates).
+
+To test scaffolding against a local `cpa-templates` checkout:
+
+```bash
+export CPA_TEMPLATES_ROOT=/path/to/cpa-templates
+uv run pytest packages/create-awesome-python-app/tests/test_cpa_templates_integration.py -v
+```
+
+The catalog is fetched from `cpa-templates` `templates.json` (override with `CPA_CATALOG_URL`).

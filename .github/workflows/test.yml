@@ -10,6 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout cpa-templates
+        uses: actions/checkout@v4
+        with:
+          repository: Create-Python-App/cpa-templates
+          path: cpa-templates
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
@@ -17,4 +22,7 @@ jobs:
         with:
           python-version-file: .python-version
       - run: uv sync --group dev
-      - run: uv run pytest --cov --cov-report=term-missing
+      - name: Run tests
+        env:
+          CPA_TEMPLATES_ROOT: ${{ github.workspace }}/cpa-templates
+        run: uv run pytest --cov --cov-report=term-missing
