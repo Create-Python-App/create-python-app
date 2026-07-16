@@ -11,7 +11,7 @@ from rich.table import Table
 console = Console()
 
 _FIXTURE = (
-    Path(__file__).resolve().parents[3] / "fixtures" / "catalog" / "templates.json"
+    Path(__file__).resolve().parents[4] / "fixtures" / "catalog" / "templates.json"
 )
 
 
