@@ -1,5 +1,8 @@
 # create-awesome-python-app
 
-CLI package (stub). Entry point: `create-awesome-python-app`.
+CLI package. Framework: **Typer** (chosen over Click for richer typing/help).
 
-Depends on workspace member `create-python-app-core`.
+```bash
+uv run create-awesome-python-app --help
+uvx create-awesome-python-app@latest my-app   # after PyPI publish
+```
