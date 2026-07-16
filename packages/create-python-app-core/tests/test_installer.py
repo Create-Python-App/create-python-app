@@ -22,7 +22,7 @@ def _ext(tmp: Path, name: str, *, incompatible: list[str] | None = None) -> str:
     root = tmp / name
     (root / "template").mkdir(parents=True)
     (root / "template" / f"{name}.txt").write_text(name)
-    payload = {"name": name}
+    payload: dict[str, object] = {"name": name}
     if incompatible:
         payload["incompatibleWith"] = incompatible
     import json
