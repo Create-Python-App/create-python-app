@@ -16,7 +16,7 @@ python-preference = "managed"
 [dependency-groups]
 dev = [
     "ruff>=0.15.21",
-    "pyright>=1.1.400",
+    "pyright>=1.1.411",
     "pre-commit>=4.6.0",
     "pytest-cov>=6.0.0",
     "pytest-asyncio>=1.4.0",
