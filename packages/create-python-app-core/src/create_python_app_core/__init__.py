@@ -19,6 +19,12 @@ from create_python_app_core.errors import (
     PackageManagerFallbackError,
     ScaffoldAbortedError,
 )
+from create_python_app_core.git_cache import (
+    CacheMeta,
+    download_repository,
+    read_cache_meta,
+    write_cache_meta,
+)
 from create_python_app_core.paths import default_cache_dir, resolve_source
 
 __all__ = [
@@ -32,6 +38,10 @@ __all__ = [
     "NON_EMPTY_DIR_ERROR_CODE",
     "default_cache_dir",
     "resolve_source",
+    "download_repository",
+    "CacheMeta",
+    "read_cache_meta",
+    "write_cache_meta",
     "CPA_USER_AGENT",
     "check_for_latest_version",
     "check_python_version",
