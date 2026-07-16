@@ -59,6 +59,8 @@ From the repo root (requires [uv](https://docs.astral.sh/uv/)):
 | Type-check | `make typecheck` | `uv run pyright` |
 | Build packages | `make build` | `uv build --all` |
 
+> Install git hooks: `uv run pre-commit install`
+>
 > Ruff, Pyright, and pytest are wired in Epic 2 (`#17`–`#20`). Until then, `make lint` / `test` / `typecheck` will fail if those tools are not installed yet — that is expected.
 
 ## Python version
