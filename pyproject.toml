@@ -15,7 +15,7 @@ python-preference = "managed"
 # Dev tools are added in Epic 2; groups reserved so root tasks stay stable.
 [dependency-groups]
 dev = [
-    "ruff>=0.15.21",
+    "ruff>=0.15.22",
     "pyright>=1.1.411",
     "pre-commit>=4.6.0",
     "pytest-cov>=7.1.0",
