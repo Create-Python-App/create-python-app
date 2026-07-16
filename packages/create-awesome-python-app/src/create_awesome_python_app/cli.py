@@ -414,12 +414,42 @@ def cache_dir_cmd() -> None:
 
 @cache_app.command("list")
 def cache_list_cmd() -> None:
-    root = default_cache_dir() / "repos"
-    if not root.exists():
-        console.print("(empty)")
+    from create_awesome_python_app.cache import (
+        format_age,
+        format_bytes,
+        list_cache_entries,
+        short_sha,
+    )
+
+    entries = list_cache_entries()
+    if not entries:
+        console.print("[dim]No cached templates or extensions.[/dim]")
+        console.print(
+            f"[dim]Cache root: {default_cache_dir()}\n"
+            "Run 'create-awesome-python-app my-app -t <template>' to populate it.[/dim]"
+        )
         return
-    for p in sorted(root.iterdir()):
-        console.print(p.name)
+    id_width = max(2, *(len(e.id) for e in entries))
+    console.print(
+        f"{'ID'.ljust(id_width)}  "
+        f"{'URL'.ljust(50)}  "
+        f"{'REF'.ljust(8)}  "
+        f"{'LAST FETCHED'.ljust(14)}  "
+        f"{'SHA'.ljust(8)}  "
+        "SIZE"
+    )
+    for entry in entries:
+        url = (entry.url or "—")[:50].ljust(50)
+        ref = (entry.ref or "—")[:8].ljust(8)
+        console.print(
+            f"[cyan]{entry.id.ljust(id_width)}[/cyan]  "
+            f"[dim]{url}[/dim]  "
+            f"[dim]{ref}[/dim]  "
+            f"[dim]{format_age(entry.fetched_at).ljust(14)}[/dim]  "
+            f"[dim]{short_sha(entry.commit).ljust(8)}[/dim]  "
+            f"[dim]{format_bytes(entry.size_bytes)}[/dim]"
+        )
+    console.print(f"[dim]\nCache root: {default_cache_dir()}[/dim]")
 
 
 @cache_app.command("clean")
@@ -427,35 +457,116 @@ def cache_clean_cmd(
     id: str | None = typer.Argument(None),
     catalog: bool = typer.Option(False, "--catalog"),
 ) -> None:
-    import shutil
+    from create_awesome_python_app.cache import clean_cache
 
-    root = default_cache_dir()
-    target = root / "repos" / id if id else root / "repos"
-    if target.exists():
-        shutil.rmtree(target)
-    if catalog:
-        cat = root / "catalog"
-        if cat.exists():
-            shutil.rmtree(cat)
-    console.print("cleaned")
+    result = clean_cache(id, catalog=catalog)
+    if result.not_found:
+        console.print(f"[yellow]No cache entry found for id: {id}[/yellow]")
+        return
+    if not result.removed:
+        console.print("[dim]Nothing to remove.[/dim]")
+        return
+    for path in result.removed:
+        console.print(f"[green]✓ Removed {path}[/green]")
 
 
 @cache_app.command("verify")
 def cache_verify_cmd(id: str | None = typer.Argument(None)) -> None:
-    console.print("verify: ok (stub fsck)" if not id else f"verify {id}: ok")
+    from create_awesome_python_app.cache import verify_cache
+
+    results = verify_cache(id)
+    if not results:
+        console.print("[dim]No cached entries.[/dim]")
+        raise typer.Exit(0)
+    all_ok = True
+    for entry in results:
+        ok = bool(entry.fsck_ok)
+        if not ok:
+            all_ok = False
+        mark = "[green]✓[/green]" if ok else "[red]✗[/red]"
+        console.print(f"{mark} [cyan]{entry.id}[/cyan]  [dim]{entry.url or '—'}[/dim]")
+    if not all_ok:
+        console.print()
+        console.print(
+            "[red]Some entries failed git fsck. "
+            "Consider 'create-awesome-python-app cache clean' and re-run.[/red]"
+        )
+        raise typer.Exit(1)
 
 
 @cache_app.command("outdated")
 def cache_outdated_cmd() -> None:
-    console.print("(none)")
+    from create_awesome_python_app.cache import check_outdated
+
+    results = check_outdated()
+    if not results:
+        console.print("[dim]No cached entries to check.[/dim]")
+        return
+    id_width = max(2, *(len(r.id) for r in results))
+    behind_count = 0
+    for row in results:
+        if row.error:
+            console.print(
+                f"[dim]?[/dim] [cyan]{row.id.ljust(id_width)}[/cyan]  "
+                f"[dim]{row.error}[/dim]"
+            )
+            continue
+        icon = "[yellow]▼[/yellow]" if row.behind else "[green]✓[/green]"
+        local = (row.local_sha or "—")[:7]
+        remote = (row.remote_sha or "—")[:7]
+        console.print(
+            f"{icon} [cyan]{row.id.ljust(id_width)}[/cyan]  "
+            f"local={local}  remote={remote}"
+        )
+        if row.behind:
+            behind_count += 1
+    if behind_count:
+        noun = "entry is" if behind_count == 1 else "entries are"
+        console.print(
+            f"[yellow]\n{behind_count} {noun} behind remote. "
+            "Run 'create-awesome-python-app cache update [id]' to refresh.[/yellow]"
+        )
 
 
 @cache_app.command("update")
 def cache_update_cmd(id: str | None = typer.Argument(None)) -> None:
-    console.print(f"updated {id or 'all'}")
+    from create_awesome_python_app.cache import list_cache_entries, update_cache
+
+    entries = list_cache_entries()
+    targets = [e for e in entries if e.id == id] if id else entries
+    if not targets:
+        label = f"y matching '{id}'" if id else "ies"
+        console.print(f"[dim]No cached entr{label} found.[/dim]")
+        raise typer.Exit(0)
+
+    updated, failed = update_cache(id)
+    by_id = {e.id: e for e in targets}
+    for entry_id in updated:
+        entry = by_id.get(entry_id)
+        console.print(
+            f"[green]✓[/green] [cyan]{entry_id}[/cyan]  "
+            f"[dim]{entry.url if entry else ''}[/dim]"
+        )
+    for entry_id in failed:
+        entry = by_id.get(entry_id)
+        detail = "missing url or refresh failed"
+        if entry and not entry.url:
+            detail = "missing url in meta"
+        console.print(f"[red]✗[/red] [cyan]{entry_id}[/cyan]  [dim]{detail}[/dim]")
+    if failed:
+        raise typer.Exit(1)
 
 
 @cache_app.command("doctor")
 def cache_doctor_cmd() -> None:
-    console.print(f"cache: {default_cache_dir()}")
-    console.print("git: ok")
+    from create_awesome_python_app.cache import run_doctor
+
+    results = run_doctor()
+    all_ok = True
+    for row in results:
+        mark = "[green]✓[/green]" if row.ok else "[red]✗[/red]"
+        console.print(f"{mark} {row.check}: {row.detail}")
+        if not row.ok:
+            all_ok = False
+    if not all_ok:
+        raise typer.Exit(1)
