@@ -7,6 +7,7 @@ import os
 import time
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,25 @@ from rich.table import Table
 from create_awesome_python_app import __version__
 
 console = Console(stderr=True)
+
+CUSTOM_TEMPLATE_SENTINEL = "__custom_template__"
+_ANSI_RESET = "\033[0m"
+_CATEGORY_PALETTE = (
+    "\033[33m",  # yellow
+    "\033[32m",  # green
+    "\033[36m",  # cyan
+    "\033[35m",  # magenta
+    "\033[34m",  # blue
+)
+
+
+@dataclass(frozen=True)
+class TemplateChoice:
+    """Searchable interactive template choice."""
+
+    title: str
+    value: str
+    search: str
 
 
 class CatalogResolutionError(ValueError):
@@ -53,6 +73,96 @@ def resolve_catalog_specs(
     specs: list[str], *, catalog: dict[str, Any] | None = None
 ) -> list[str]:
     return [resolve_catalog_spec(spec, catalog=catalog) for spec in specs]
+
+
+def short_category_label(category_name: str) -> str:
+    """Derive a compact badge label from a catalog category name."""
+    stop_words = {"Applications", "Application", "Boilerplate"}
+    words = [word for word in category_name.split() if word not in stop_words]
+    if len(words) >= 3:
+        return "".join(word[:1].upper() for word in words)
+    return " ".join(words[:2]) or category_name
+
+
+def _color_category(slug: str, label: str) -> str:
+    if os.environ.get("NO_COLOR"):
+        return label
+    idx = sum(ord(char) for char in slug) % len(_CATEGORY_PALETTE)
+    return f"{_CATEGORY_PALETTE[idx]}{label}{_ANSI_RESET}"
+
+
+def _category_map(data: dict[str, Any]) -> dict[str, str]:
+    return {
+        str(category.get("slug", "")): str(category.get("name", ""))
+        for category in data.get("categories", [])
+    }
+
+
+def _search_text(template: dict[str, Any], category_name: str) -> str:
+    labels = template.get("labels", [])
+    if not isinstance(labels, list):
+        labels = []
+    tokens = [
+        template.get("slug", ""),
+        template.get("name", ""),
+        template.get("description", ""),
+        template.get("category", ""),
+        category_name,
+        *labels,
+    ]
+    return " ".join(str(token) for token in tokens if token).lower()
+
+
+def build_template_choices(data: dict[str, Any]) -> list[TemplateChoice]:
+    """Build CNA-style searchable template choices for interactive mode."""
+    categories = _category_map(data)
+    choices: list[TemplateChoice] = []
+    templates = sorted(
+        (item for item in data.get("templates", []) if isinstance(item, dict)),
+        key=lambda item: (
+            list(categories).index(str(item.get("category", "")))
+            if str(item.get("category", "")) in categories
+            else len(categories),
+            str(item.get("name", item.get("slug", ""))).lower(),
+        ),
+    )
+    for template in templates:
+        if not isinstance(template, dict):
+            continue
+        template_url = str(template.get("url", ""))
+        if not template_url:
+            continue
+        category_slug = str(template.get("category", "custom"))
+        category_name = categories.get(category_slug, category_slug)
+        badge = short_category_label(category_name).ljust(10)[:10]
+        slug = str(template.get("slug", ""))
+        labels = template.get("labels", [])
+        label_suffix = ""
+        if isinstance(labels, list) and labels:
+            label_suffix = " · " + ", ".join(str(label) for label in labels[:3])
+        description = str(template.get("description", "")).strip()
+        description_suffix = f" — {description}" if description else ""
+        title = (
+            f"{_color_category(category_slug, badge)}  "
+            f"{template.get('name', slug)} ({slug})"
+            f"{label_suffix}{description_suffix}"
+        )
+        choices.append(
+            TemplateChoice(
+                title=title,
+                value=template_url,
+                search=_search_text(template, category_name),
+            )
+        )
+
+    choices.append(
+        TemplateChoice(
+            title=" " * 12 + "Use my own template URL",
+            value=CUSTOM_TEMPLATE_SENTINEL,
+            search="custom own template url github file",
+        )
+    )
+    return choices
 
 
 DEFAULT_CATALOG_URL = "https://raw.githubusercontent.com/Create-Python-App/cpa-templates/main/templates.json"

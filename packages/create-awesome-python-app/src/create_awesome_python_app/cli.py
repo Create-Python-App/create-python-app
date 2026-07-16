@@ -108,9 +108,34 @@ def scaffold(
         try:
             import questionary
 
-            template = questionary.text(
-                "Template (slug or URL)", default="file://."
+            from create_awesome_python_app.catalog import (
+                CUSTOM_TEMPLATE_SENTINEL,
+                build_template_choices,
+                get_catalog_data,
+            )
+
+            catalog = get_catalog_data()
+            template_choices = build_template_choices(catalog)
+            choice_by_title = {
+                choice.title: choice.value for choice in template_choices
+            }
+            selected_title = questionary.autocomplete(
+                "Pick a template (type to search)",
+                choices=list(choice_by_title),
+                match_middle=True,
+                qmark="?",
+                pointer=">",
             ).ask()
+            selected_template = choice_by_title.get(
+                str(selected_title), selected_title
+            )
+            if selected_template == CUSTOM_TEMPLATE_SENTINEL:
+                selected_template = questionary.text(
+                    "Template URL",
+                    default="file://.",
+                    validate=lambda value: bool(value) or "Template URL is required",
+                ).ask()
+            template = selected_template
             if not template:
                 raise typer.Exit(1)
         except ImportError:
