@@ -14,4 +14,18 @@ python-preference = "managed"
 
 # Dev tools are added in Epic 2; groups reserved so root tasks stay stable.
 [dependency-groups]
-dev = []
+dev = [
+    "ruff>=0.12.0",
+]
+
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["packages"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.format]
+quote-style = "double"
