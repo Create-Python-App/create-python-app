@@ -1,0 +1,22 @@
+name: Todo Checker
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "31 1,12 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  todo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan TODOs
+        run: |
+          if grep -RIn --exclude-dir=.git --exclude-dir=.venv "TODO\|FIXME" . | head -50; then
+            echo "Found TODO/FIXME markers (informational)"
+          else
+            echo "No TODO/FIXME markers"
+          fi
