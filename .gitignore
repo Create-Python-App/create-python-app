@@ -1,8 +1,40 @@
+# Virtual environments / uv
 .venv/
+venv/
+.python-version.local
+
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Test / type / lint caches
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-dist/
-*.egg-info/
+.coverage
+htmlcov/
+coverage.xml
+.dmypy.json
+.pyright/
+
+# Editors / OS
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+.DS_Store
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# MegaLinter / CI artifacts
+megalinter-reports/

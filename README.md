@@ -4,6 +4,26 @@ Composable scaffolding CLI for production-ready Python apps.
 
 > **Status:** bootstrapping. Roadmap: [#1](https://github.com/Create-Python-App/create-python-app/issues/1).
 
+
+## Install (preview)
+
+Once published to PyPI:
+
+```bash
+uvx create-awesome-python-app@latest my-app
+```
+
+Until the first release, use the workspace CLI stub:
+
+```bash
+uv sync
+uv run create-awesome-python-app
+```
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
+
 ## Monorepo layout (uv workspaces)
 
 This repository is a **virtual uv workspace**: the root is not published; packages live under `packages/*` and share one `uv.lock` / `.venv`.
