@@ -82,7 +82,7 @@ Flags:
 
 Interactive mode uses `questionary` with consistent markers: `qmark="?"`, `pointer=">"`.
 
-**1. Template selection (autocomplete)**
+#### 1. Template selection (autocomplete)
 
 When no `--template` is provided and interactive mode is on:
 
@@ -92,7 +92,7 @@ When no `--template` is provided and interactive mode is on:
 - Each choice shows a category badge, template name, slug, optional labels, and description
 - Final choice: `Use my own template URL` -> `questionary.text` for a custom URL
 
-**2. Extension selection (checkbox, two-step)**
+#### 2. Extension selection (checkbox, two-step)
 
 When no `--addons` are provided and interactive mode is on:
 
@@ -100,7 +100,7 @@ When no `--addons` are provided and interactive mode is on:
 - Step B: per selected category, `{CategoryName} extensions` -- item-level checkbox
 - Choices are filtered by template type compatibility
 
-**3. Custom options (text / confirm)**
+#### 3. Custom options (text / confirm)
 
 From `cpa.config.json` or catalog `customOptions`:
 
