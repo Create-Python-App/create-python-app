@@ -4,27 +4,125 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Any
 
-from create_python_app_core.errors import ManifestLoadError
+from jinja2 import Environment, StrictUndefined, TemplateError
+
+from create_python_app_core.errors import ManifestLoadError, ScaffoldAbortedError
 from create_python_app_core.paths import ResolvedSource, get_template_dir_path
 
+_JINJA = Environment(
+    undefined=StrictUndefined,
+    keep_trailing_newline=True,
+    autoescape=False,
+)
 
-def copy_tree(src: Path, dest: Path, *, overwrite: bool = True) -> list[Path]:
-    """Copy files from src into dest. Returns list of written paths."""
+
+def _mode_from_path(rel: Path) -> str:
+    name = rel.name
+    if name.endswith(".append.template") or name.endswith(".template.append"):
+        return "appendTemplate"
+    if name.endswith(".append"):
+        return "append"
+    if name.endswith(".template"):
+        return "copyTemplate"
+    return "copy"
+
+
+def _output_rel(rel: Path) -> Path:
+    """Strip processing suffixes from a relative path."""
+    name = rel.name
+    for suffix in (".append.template", ".template.append", ".template", ".append"):
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+            break
+    return rel.with_name(name)
+
+
+def render_template(content: str, context: dict[str, Any], *, path: str) -> str:
+    """Render Jinja2 content with StrictUndefined."""
+    try:
+        return _JINJA.from_string(content).render(**context)
+    except TemplateError as exc:
+        raise ScaffoldAbortedError(
+            f"Template render failed for {path}: {exc}"
+        ) from exc
+
+
+def _write_bytes(target: Path, data: bytes, *, append: bool) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    mode = "ab" if append else "wb"
+    with target.open(mode) as fh:
+        fh.write(data)
+
+
+def _write_text(target: Path, text: str, *, append: bool) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    mode = "a" if append else "w"
+    with target.open(mode, encoding="utf-8") as fh:
+        fh.write(text)
+
+
+def process_file(
+    src: Path,
+    dest_root: Path,
+    rel: Path,
+    *,
+    context: dict[str, Any],
+    overwrite: bool = True,
+) -> Path | None:
+    """Copy / render / append one file into dest_root. Returns written path or None."""
+    mode = _mode_from_path(rel)
+    out_rel = _output_rel(rel)
+    target = dest_root / out_rel
+
+    if mode == "copy":
+        if target.exists() and not overwrite:
+            return None
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, target)
+        return target
+
+    if mode == "append":
+        content = src.read_text(encoding="utf-8")
+        _write_text(target, content, append=True)
+        return target
+
+    # template modes
+    rendered = render_template(
+        src.read_text(encoding="utf-8"),
+        context,
+        path=str(rel),
+    )
+    append = mode == "appendTemplate"
+    if target.exists() and not overwrite and not append:
+        return None
+    _write_text(target, rendered, append=append)
+    return target
+
+
+def copy_tree(
+    src: Path,
+    dest: Path,
+    *,
+    overwrite: bool = True,
+    context: dict[str, Any] | None = None,
+) -> list[Path]:
+    """Copy files from src into dest with .template / .append processing."""
     written: list[Path] = []
     if not src.is_dir():
         raise ManifestLoadError(f"template directory not found: {src}")
     dest.mkdir(parents=True, exist_ok=True)
-    for path in src.rglob("*"):
+    ctx = context or {}
+    for path in sorted(src.rglob("*")):
         if path.is_dir():
             continue
         rel = path.relative_to(src)
-        target = dest / rel
-        if target.exists() and not overwrite:
-            continue
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, target)
-        written.append(target)
+        result = process_file(
+            path, dest, rel, context=ctx, overwrite=overwrite
+        )
+        if result is not None:
+            written.append(result)
     return written
 
 
@@ -34,18 +132,25 @@ def load_layer(
     dest: Path,
     *,
     overwrite: bool = True,
+    context: dict[str, Any] | None = None,
 ) -> list[Path]:
     """Load one template/extension layer into dest."""
     template_root = get_template_dir_path(source, root)
-    return copy_tree(template_root, dest, overwrite=overwrite)
+    return copy_tree(
+        template_root, dest, overwrite=overwrite, context=context
+    )
 
 
 def merge_layers(
     layers: list[tuple[ResolvedSource, Path]],
     dest: Path,
+    *,
+    context: dict[str, Any] | None = None,
 ) -> list[Path]:
-    """Apply layers in order: template → addons → extend (later wins)."""
+    """Apply layers in order: template → addons → extend (later wins for copies)."""
     written: list[Path] = []
     for source, root in layers:
-        written.extend(load_layer(source, root, dest, overwrite=True))
+        written.extend(
+            load_layer(source, root, dest, overwrite=True, context=context)
+        )
     return written
