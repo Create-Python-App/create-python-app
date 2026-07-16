@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "create-python-app-core",
+    "questionary>=2.1.1",
     "rich>=15.0.0",
     "typer>=0.27.0",
 ]
