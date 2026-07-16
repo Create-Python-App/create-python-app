@@ -87,8 +87,7 @@ def test_scaffold_fastapi_starter_via_catalog_slug(
             {
                 "slug": "fastapi-starter",
                 "url": (
-                    f"file://{CPA_TEMPLATES_ROOT}"
-                    "?subdir=templates/fastapi-starter"
+                    f"file://{CPA_TEMPLATES_ROOT}?subdir=templates/fastapi-starter"
                 ),
             }
         ],
