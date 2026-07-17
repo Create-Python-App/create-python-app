@@ -28,6 +28,68 @@ def test_in_ci_env(monkeypatch) -> None:
     os.environ.pop("CI", None)
 
 
+def test_interactive_template_autocomplete_omits_pointer(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """questionary.autocomplete rejects ``pointer`` (PromptSession TypeError)."""
+    template_dir = tmp_path / "fastapi"
+    template_dir.mkdir()
+    (template_dir / "cpa.config.json").write_text(
+        json.dumps({"name": "fastapi-starter"}),
+        encoding="utf-8",
+    )
+    catalog = {
+        "categories": [{"slug": "backend-applications", "name": "Backend"}],
+        "templates": [
+            {
+                "slug": "fastapi-starter",
+                "name": "FastAPI Starter",
+                "url": f"file://{template_dir}",
+                "type": "fastapi-backend",
+                "category": "backend-applications",
+            }
+        ],
+        "extensions": [],
+    }
+    catalog_file = tmp_path / "templates.json"
+    catalog_file.write_text(json.dumps(catalog), encoding="utf-8")
+    monkeypatch.setenv("CPA_CATALOG_URL", f"file://{catalog_file}")
+    monkeypatch.setenv("CPA_NO_CATALOG_CACHE", "1")
+    monkeypatch.delenv("CI", raising=False)
+
+    captured_kwargs: dict[str, object] = {}
+
+    def fake_autocomplete(*_args, **kwargs):
+        captured_kwargs.update(kwargs)
+        return FakePrompt("Backend     FastAPI Starter (fastapi-starter)")
+
+    def fake_checkbox(*_args, **_kwargs):
+        return FakePrompt([])
+
+    captured: dict[str, object] = {}
+
+    async def fake_create_python_app(project_directory, options, *_args, **_kwargs):
+        captured["project_directory"] = project_directory
+        captured["options"] = options
+
+    monkeypatch.setattr("questionary.autocomplete", fake_autocomplete)
+    monkeypatch.setattr("questionary.checkbox", fake_checkbox)
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.create_python_app",
+        fake_create_python_app,
+    )
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.check_for_latest_version",
+        fake_check_for_latest_version,
+    )
+
+    result = runner.invoke(app, ["--interactive", "--no-install", "api"])
+
+    assert result.exit_code == 0, result.stdout + result.stderr
+    assert "pointer" not in captured_kwargs
+    assert captured["project_directory"] == "api"
+
+
 def test_interactive_extension_selection_passes_addon_urls(
     tmp_path: Path, monkeypatch
 ) -> None:
