@@ -1,12 +1,12 @@
 name: Publish Docker image
 
-# Triggers on release tags for the CLI package. Version comes directly
-# from the tag ref (create-awesome-python-app@X.Y.Z).
+# Runs after Release succeeds (PyPI already uploaded), or manually to
+# rebuild an image for an existing version. Avoids racing the tag push
+# that also starts Release.
 on:
-  push:
-    tags:
-      - "create-awesome-python-app@*"
-  # Manual trigger to rebuild an image for an existing version.
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -19,6 +19,10 @@ permissions:
 jobs:
   docker:
     name: Build and push Docker image
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_branch, 'create-awesome-python-app@'))
     runs-on: ubuntu-latest
     environment: pypi
     steps:
@@ -29,14 +33,18 @@ jobs:
       - name: Resolve version
         id: version
         env:
-          TAG_REF: ${{ github.ref_name }}
           INPUT_VERSION: ${{ github.event.inputs.version }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
-          if [ -n "$INPUT_VERSION" ]; then
+          set -euo pipefail
+          if [ -n "${INPUT_VERSION:-}" ]; then
             VERSION="$INPUT_VERSION"
           else
-            # Tag format: create-awesome-python-app@X.Y.Z
-            VERSION="${TAG_REF#create-awesome-python-app@}"
+            VERSION="${RUN_BRANCH#create-awesome-python-app@}"
+          fi
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]+)?$'; then
+            echo "::error::Invalid Docker image version: $VERSION"
+            exit 1
           fi
           MAJOR=$(echo "$VERSION" | cut -d. -f1)
           MINOR=$(echo "$VERSION" | cut -d. -f2)
@@ -45,6 +53,26 @@ jobs:
             echo "major=$MAJOR"
             echo "minor=$MINOR"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Wait for PyPI package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PACKAGE: create-awesome-python-app
+        run: |
+          set -euo pipefail
+          attempts=24
+          delay=15
+          for attempt in $(seq 1 "$attempts"); do
+            if curl -sfL "https://pypi.org/pypi/${PACKAGE}/${VERSION}/json" \
+              | jq -e '.urls[] | select(.packagetype=="sdist") | .digests.sha256' >/dev/null; then
+              echo "PyPI has ${PACKAGE}==${VERSION}"
+              exit 0
+            fi
+            echo "::warning::PyPI not ready for ${PACKAGE}==${VERSION} (attempt ${attempt}/${attempts}); retrying in ${delay}s"
+            sleep "$delay"
+          done
+          echo "::error::Timed out waiting for ${PACKAGE}==${VERSION} on PyPI"
+          exit 1
 
       - name: Set up QEMU
         # Required so buildx can cross-build linux/arm64 on the x86_64
@@ -67,9 +95,6 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ulisesjeremias/create-awesome-python-app
-          # `latest` is pushed on tag pushes AND on explicit workflow_dispatch
-          # runs (which always execute against main, so they represent the
-          # current release).
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.version.outputs.version }}

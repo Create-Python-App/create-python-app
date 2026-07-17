@@ -4,14 +4,18 @@
 
 | Channel | Workflow | Secret(s) |
 |---------|----------|-----------|
-| **PyPI** | `publish.yml` | OIDC Trusted Publishing (no token) |
-| **Docker** | `publish-docker.yml` | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
-| **AUR** | `publish-aur.yml` | `AUR_SSH_PRIVATE_KEY`, `AUR_REPO_TOKEN` |
-| **Homebrew** | `notify-homebrew.yml` → `homebrew-tap` | `HOMEBREW_TAP_TOKEN` |
+| **PyPI** | `publish.yml` (Release) | OIDC Trusted Publishing (no token) |
+| **Docker** | `publish-docker.yml` (after Release) | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
+| **AUR** | `publish-aur.yml` (after Release) | `AUR_SSH_PRIVATE_KEY`, `AUR_REPO_TOKEN` |
+| **Homebrew** | `notify-homebrew.yml` → `homebrew-tap` (after Release) | `HOMEBREW_TAP_TOKEN` |
 
 Configure secrets under **Settings → Environments → `pypi` → Environment secrets**
 (not repository Action secrets). Release, Docker, AUR, and Homebrew jobs all use
 `environment: pypi`.
+
+Docker / AUR / Homebrew install from PyPI, so they run via `workflow_run`
+**after** Release succeeds (they no longer race the same tag push). Each
+consumer also polls PyPI with retries for CDN indexing lag.
 
 ## PyPI Trusted Publishing
 
@@ -37,8 +41,10 @@ git push origin create-awesome-python-app@X.Y.Z
 
 Then:
 
-1. Confirm Release (PyPI), Notify Homebrew, Publish to AUR, and Docker workflows
-2. Smoke: `uvx create-awesome-python-app@X.Y.Z --help`
+1. Confirm **Release** (PyPI + GitHub Release) succeeds — Docker, AUR, and
+   Homebrew notify then start via `workflow_run`
+2. Confirm those three workflows complete
+3. Smoke: `uvx --python 3.12 create-awesome-python-app@X.Y.Z --help`
 
 ## Docker Hub
 
@@ -106,8 +112,9 @@ If the workflow fails before `Publish to AUR`, check the preflight log first:
   environment or the workflow did not get environment access.
 - AUR RPC / `git ls-remote` failures are usually transient AUR availability
   issues; rerun the job after a few minutes.
-- PyPI metadata failures usually mean the release tag fired before PyPI finished
-  indexing the sdist; rerun once PyPI shows the version.
+- PyPI metadata failures usually mean CDN indexing lag after upload; the
+  workflow polls PyPI for several minutes — if it still fails, check
+  `https://pypi.org/pypi/create-awesome-python-app/<version>/json` and rerun.
 
 If `Publish to AUR` succeeds but the RPC summary still shows the previous
 version, wait for AUR propagation and rerun the distribution smoke workflow.
@@ -165,4 +172,5 @@ red.
 ## After secrets are in place
 
 Every subsequent release only requires tagging `create-awesome-python-app@X.Y.Z`.
-PyPI, Homebrew notify, AUR, and Docker workflows fan out from that tag.
+**Release** publishes to PyPI; Docker, AUR, and Homebrew notify follow when
+that workflow succeeds.
