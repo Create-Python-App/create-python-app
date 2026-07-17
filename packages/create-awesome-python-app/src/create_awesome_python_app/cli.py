@@ -247,7 +247,6 @@ def scaffold(
                 choices=list(choice_by_title),
                 match_middle=True,
                 qmark="?",
-                pointer=">",
             ).ask()
             selected_template = choice_by_title.get(str(selected_title), selected_title)
             if selected_template == CUSTOM_TEMPLATE_SENTINEL:
