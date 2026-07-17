@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -19,6 +18,8 @@ from create_awesome_python_app.catalog import (
 FIXTURE_PATH = (
     Path(__file__).resolve().parents[3] / "fixtures" / "catalog" / "templates.json"
 )
+
+
 @pytest.fixture(autouse=True)
 def _reset_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     reset_catalog_cache_for_tests()
