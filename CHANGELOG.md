@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 - 2026-07-17
+
+### Fixes
+
+- Interactive template autocomplete no longer passes unsupported `pointer` to prompt_toolkit (`TypeError: PromptSession.__init__() got an unexpected keyword argument 'pointer'`)
+
 ## 0.2.0 - 2026-07-17
 
 ### Highlights
