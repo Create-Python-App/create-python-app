@@ -365,3 +365,12 @@ uvx create-awesome-python-app@latest --version
 If behavior differs between `uvx` and a global install, compare versions and
 clear the uv tool cache. See [DISTRIBUTION_SETUP.md](./DISTRIBUTION_SETUP.md) for
 maintainer release workflow.
+
+### `cpa-templates` CI contract
+
+The template bank CI scaffolds exclusively with `uvx create-awesome-python-app@latest`
+(PyPI). It does not check out this monorepo as a scaffolding fallback. If template
+CI fails after a CLI release, fix/publish the CLI — do not teach template CI to
+`uv run` against source. See
+[cpa-templates#46](https://github.com/Create-Python-App/cpa-templates/issues/46)
+and [CPA_TEMPLATES_TRACKING.md](./CPA_TEMPLATES_TRACKING.md).
