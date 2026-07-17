@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.0 - 2026-07-17
+
+### Highlights
+
+- Catalog slugs resolve to registry URLs (`--template fastapi-starter` works end-to-end)
+- Release prep automation (`prepare_release.py` + `Prepare release PR` workflow)
+- Hardened distribution smoke (PyPI/`uvx`, Docker, Homebrew, AUR) with clearer version checks
+- AUR publish preflight + post-publish verification
+- Cross-platform scaffold smoke (Ubuntu / macOS / Windows) against published `uvx`
+
+### CLI / core
+
+- Resolve `cpa-templates` catalog slugs for `--template` / `--addons` before cloning
+- `--list-templates` / `--list-addons` reflect the live catalog (including new starters)
+
+### Tooling
+
+- Changelog-driven GitHub Release notes via `extract_release_notes.py`
+- Docs: `VERSIONING.md`, `DISTRIBUTION_SETUP.md`, cross-platform tracking
+
+Paired catalog growth lives in [cpa-templates](https://github.com/Create-Python-App/cpa-templates) (`cli-starter`, `celery-worker`, `django-api`, `uv-workspace-starter`, extension pack, typed FastAPI default, CNA-parity `github-setup`).
+
 ## 0.1.0
 
 First public release of:
