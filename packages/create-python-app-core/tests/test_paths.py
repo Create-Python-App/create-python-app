@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,16 @@ def test_file_url(tmp_path: Path) -> None:
     src = resolve_source(f"file://{tmp_path}?subdir=templates/foo")
     assert src.kind == "file"
     assert src.subdir == "templates/foo"
+
+
+def test_windows_drive_letter_file_url() -> None:
+    if os.name != "nt":
+        pytest.skip("Windows path handling is only relevant on Windows")
+
+    src = resolve_source("file:///E:/create-python/cpa-templates?subdir=templates/foo")
+    assert src.kind == "file"
+    assert src.subdir == "templates/foo"
+    assert src.local_path == Path(r"E:\create-python\cpa-templates")
 
 
 def test_github_url_with_ref() -> None:
