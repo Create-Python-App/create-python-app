@@ -15,10 +15,6 @@ on:
 permissions:
   contents: read
 
-env:
-  PACKAGE_NAME: create-awesome-python-app
-  DOCKER_IMAGE: ulisesjeremias/create-awesome-python-app
-
 concurrency:
   group: smoke-distribution
   cancel-in-progress: true
@@ -32,38 +28,27 @@ jobs:
       - name: Smoke uvx
         run: |
           set -euo pipefail
-          VERSION="$(uvx "$PACKAGE_NAME@latest" --version 2>&1)"
-          echo "uvx version: $VERSION"
-          echo "$VERSION" | grep -qE '[0-9]+\.[0-9]+\.[0-9]+' || {
-            echo "::error::Unexpected uvx version output: $VERSION"
-            exit 1
-          }
-
-          uvx "$PACKAGE_NAME@latest" --help > /tmp/cpa-help.txt
-          test -s /tmp/cpa-help.txt
-          python3 -c "from pathlib import Path; print('\n'.join(Path('/tmp/cpa-help.txt').read_text().splitlines()[:5]))"
+          uvx create-awesome-python-app@latest --version
+          uvx create-awesome-python-app@latest --help | head -5
 
   docker:
     name: Docker Hub
     runs-on: ubuntu-latest
     steps:
       - name: Pull image
-        run: docker pull "$DOCKER_IMAGE:latest"
+        run: docker pull ulisesjeremias/create-awesome-python-app:latest
 
       - name: Verify --version
         run: |
           VERSION=$(docker run --rm ulisesjeremias/create-awesome-python-app:latest --version 2>&1)
           echo "docker version: $VERSION"
-          echo "$VERSION" | grep -qE '[0-9]+\.[0-9]+\.[0-9]+' || {
+          echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' || {
             echo "::error::Unexpected version output: $VERSION"
             exit 1
           }
 
       - name: Verify --help
-        run: |
-          docker run --rm "$DOCKER_IMAGE:latest" --help > /tmp/cpa-help.txt
-          test -s /tmp/cpa-help.txt
-          python3 -c "from pathlib import Path; print('\n'.join(Path('/tmp/cpa-help.txt').read_text().splitlines()[:5]))"
+        run: docker run --rm ulisesjeremias/create-awesome-python-app:latest --help | head -5
 
   homebrew:
     name: Homebrew (Create-Python-App/tap)
@@ -79,16 +64,13 @@ jobs:
         run: |
           VERSION=$(create-awesome-python-app --version 2>&1)
           echo "homebrew version: $VERSION"
-          echo "$VERSION" | grep -qE '[0-9]+\.[0-9]+\.[0-9]+' || {
+          echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' || {
             echo "::error::Unexpected version output: $VERSION"
             exit 1
           }
 
       - name: Verify --help
-        run: |
-          create-awesome-python-app --help > /tmp/cpa-help.txt
-          test -s /tmp/cpa-help.txt
-          python3 -c "from pathlib import Path; print('\n'.join(Path('/tmp/cpa-help.txt').read_text().splitlines()[:5]))"
+        run: create-awesome-python-app --help | head -5
 
   aur:
     name: AUR (archlinux container)
@@ -123,13 +105,11 @@ jobs:
           su builder -c "
             VERSION=\$(create-awesome-python-app --version 2>&1)
             echo \"aur version: \$VERSION\"
-            echo \"\$VERSION\" | grep -qE '[0-9]+\.[0-9]+\.[0-9]+' || exit 1
+            echo \"\$VERSION\" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\$' || exit 1
           "
 
       - name: Verify --help
-        run: |
-          su builder -c "create-awesome-python-app --help > /tmp/cpa-help.txt && test -s /tmp/cpa-help.txt"
-          python3 -c "from pathlib import Path; print('\n'.join(Path('/tmp/cpa-help.txt').read_text().splitlines()[:5]))"
+        run: su builder -c "create-awesome-python-app --help | head -5"
 
   versions:
     name: Cross-check published versions
@@ -147,9 +127,7 @@ jobs:
           )
 
           DOCKER=$(
-            docker run --rm "$DOCKER_IMAGE:latest" --version 2>&1 \
-              | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
-              | head -1 \
+            docker run --rm ulisesjeremias/create-awesome-python-app:latest --version 2>&1 \
               || echo "unavailable"
           )
 
@@ -173,17 +151,6 @@ jobs:
           echo "  docker:   $DOCKER"
           echo "  homebrew: $HOMEBREW"
           echo "  aur:      $AUR"
-
-          {
-            echo "## Distribution smoke versions"
-            echo
-            echo "| Channel | Version |"
-            echo "|---------|---------|"
-            echo "| PyPI | $PYPI |"
-            echo "| Docker | $DOCKER |"
-            echo "| Homebrew | $HOMEBREW |"
-            echo "| AUR | $AUR |"
-          } >> "$GITHUB_STEP_SUMMARY"
 
           for CHANNEL_VER in "$DOCKER" "$HOMEBREW"; do
             if [ "$CHANNEL_VER" != "unavailable" ] && [ "$CHANNEL_VER" != "$PYPI" ]; then
