@@ -16,11 +16,21 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: publish-aur
+  cancel-in-progress: false
+
+env:
+  AUR_PACKAGE: create-awesome-python-app
+  AUR_RPC_URL: https://aur.archlinux.org/rpc/v5/info?arg=create-awesome-python-app
+  PYPI_PACKAGE: create-awesome-python-app
+
 jobs:
   aur:
     name: Update AUR package
     runs-on: ubuntu-latest
     environment: pypi
+    timeout-minutes: 20
     steps:
       - name: Resolve version
         id: version
@@ -32,6 +42,10 @@ jobs:
             VERSION="$INPUT_VERSION"
           else
             VERSION="${TAG_REF#create-awesome-python-app@}"
+          fi
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]+)?$'; then
+            echo "::error::Invalid AUR package version: $VERSION"
+            exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -48,11 +62,27 @@ jobs:
           NEW_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
+          retry() {
+            local attempts="$1"
+            local delay="$2"
+            shift 2
+            for attempt in $(seq 1 "$attempts"); do
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" = "$attempts" ]; then
+                return 1
+              fi
+              echo "::warning::Attempt $attempt/$attempts failed: $*; retrying in ${delay}s" >&2
+              sleep "$delay"
+            done
+          }
+
           # Reset pkgver and pkgrel; source URL already interpolates ${pkgver}.
           sed -i "s/^pkgver=.*/pkgver=${NEW_VERSION}/" PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
 
-          META=$(curl -sfL "https://pypi.org/pypi/create-awesome-python-app/${NEW_VERSION}/json")
+          META=$(retry 5 10 curl -sfL "https://pypi.org/pypi/${PYPI_PACKAGE}/${NEW_VERSION}/json")
           SHA=$(echo "$META" | jq -r '.urls[] | select(.packagetype=="sdist") | .digests.sha256')
           if [ -z "$SHA" ] || [ "$SHA" = "null" ]; then
             echo "::error::Failed to resolve PyPI sdist sha256 for v${NEW_VERSION}" >&2
@@ -62,6 +92,45 @@ jobs:
 
           echo "----- Updated PKGBUILD -----"
           cat PKGBUILD
+
+      - name: Preflight AUR availability
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          retry() {
+            local attempts="$1"
+            local delay="$2"
+            shift 2
+            for attempt in $(seq 1 "$attempts"); do
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" = "$attempts" ]; then
+                return 1
+              fi
+              echo "::warning::Attempt $attempt/$attempts failed: $*; retrying in ${delay}s" >&2
+              sleep "$delay"
+            done
+          }
+
+          test -n "$AUR_SSH_PRIVATE_KEY" || {
+            echo "::error::AUR_SSH_PRIVATE_KEY is empty or unavailable in the pypi environment"
+            exit 1
+          }
+
+          retry 5 15 curl -fsSL "$AUR_RPC_URL" >/tmp/aur-rpc.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path("/tmp/aur-rpc.json").read_text())
+          print(f"AUR RPC resultcount={data.get('resultcount')}")
+          PY
+
+          mkdir -p ~/.ssh
+          retry 5 10 ssh-keyscan -T 30 -t rsa,ecdsa,ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+          retry 5 15 git ls-remote "https://aur.archlinux.org/${AUR_PACKAGE}.git" >/dev/null
 
       - name: Publish to AUR
         # Pushes to aur.archlinux.org via SSH. The action reads the
@@ -78,6 +147,50 @@ jobs:
           # dsa is no longer supported in modern OpenSSH; omit it to
           # avoid "Unknown key type" errors during keyscan.
           ssh_keyscan_types: "rsa,ecdsa,ed25519"
+
+      - name: Verify AUR RPC after publish
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          retry() {
+            local attempts="$1"
+            local delay="$2"
+            shift 2
+            for attempt in $(seq 1 "$attempts"); do
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" = "$attempts" ]; then
+                return 1
+              fi
+              echo "::warning::Attempt $attempt/$attempts failed: $*; retrying in ${delay}s" >&2
+              sleep "$delay"
+            done
+          }
+
+          retry 6 20 curl -fsSL "$AUR_RPC_URL" >/tmp/aur-rpc.json
+          AUR_VERSION=$(
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path("/tmp/aur-rpc.json").read_text())
+          results = data.get("results") or []
+          print(results[0]["Version"].split("-", 1)[0] if results else "")
+          PY
+          )
+          echo "AUR version: $AUR_VERSION"
+          echo "Expected version: $EXPECTED_VERSION"
+          if [ "$AUR_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "::warning::AUR RPC has not reflected ${EXPECTED_VERSION} yet (current: ${AUR_VERSION:-missing})"
+          fi
+          {
+            echo "## AUR publish verification"
+            echo
+            echo "- Expected version: \`$EXPECTED_VERSION\`"
+            echo "- AUR RPC version: \`${AUR_VERSION:-missing}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Sync updated PKGBUILD to GitHub mirror
         # Keep the aur-package GitHub mirror in sync with what's live

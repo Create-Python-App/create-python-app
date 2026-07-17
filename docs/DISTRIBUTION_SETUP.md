@@ -92,6 +92,26 @@ Paste the **private** key as repo secret `AUR_SSH_PRIVATE_KEY`.
 Fine-grained PAT with **Contents: Read and write** on `Create-Python-App/aur-package` only.
 Store as `AUR_REPO_TOKEN`.
 
+### AUR publish runbook
+
+`publish-aur.yml` performs three reliability checks around the publish step:
+
+1. Resolve the PyPI sdist SHA with retry before editing `PKGBUILD`
+2. Preflight AUR RPC, `ssh-keyscan`, and `git ls-remote` with retry before pushing
+3. Query AUR RPC after publish and write the observed version to the job summary
+
+If the workflow fails before `Publish to AUR`, check the preflight log first:
+
+- Empty `AUR_SSH_PRIVATE_KEY` means the secret is missing from the `pypi`
+  environment or the workflow did not get environment access.
+- AUR RPC / `git ls-remote` failures are usually transient AUR availability
+  issues; rerun the job after a few minutes.
+- PyPI metadata failures usually mean the release tag fired before PyPI finished
+  indexing the sdist; rerun once PyPI shows the version.
+
+If `Publish to AUR` succeeds but the RPC summary still shows the previous
+version, wait for AUR propagation and rerun the distribution smoke workflow.
+
 ## Homebrew (`HOMEBREW_TAP_TOKEN`)
 
 **Prereqs**: [`Create-Python-App/homebrew-tap`](https://github.com/Create-Python-App/homebrew-tap)
