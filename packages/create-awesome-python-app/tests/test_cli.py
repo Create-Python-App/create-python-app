@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from create_awesome_python_app import __version__
 from create_awesome_python_app.cli import app
 from typer.testing import CliRunner
 
@@ -21,7 +22,7 @@ def test_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     combined = result.stdout + result.stderr
-    assert "0.1.0" in combined
+    assert __version__ in combined
 
 
 def test_help() -> None:
