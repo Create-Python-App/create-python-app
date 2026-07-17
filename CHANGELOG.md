@@ -2,9 +2,9 @@
 
 ## 0.2.2 - 2026-07-17
 
-### Fixes
+### Interactive CLI
 
-- Interactive template autocomplete no longer embeds ANSI category badges (questionary HTML parse error while typing to search)
+- Template autocomplete no longer embeds ANSI category badges (questionary HTML parse error while typing to search)
 
 ## 0.2.1 - 2026-07-17
 
