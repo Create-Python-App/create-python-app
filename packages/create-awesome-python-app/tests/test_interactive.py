@@ -38,13 +38,14 @@ def test_interactive_template_autocomplete_omits_pointer(
         json.dumps({"name": "fastapi-starter"}),
         encoding="utf-8",
     )
+    template_url = f"file://{template_dir}"
     catalog = {
         "categories": [{"slug": "backend-applications", "name": "Backend"}],
         "templates": [
             {
                 "slug": "fastapi-starter",
                 "name": "FastAPI Starter",
-                "url": f"file://{template_dir}",
+                "url": template_url,
                 "type": "fastapi-backend",
                 "category": "backend-applications",
             }
@@ -61,7 +62,9 @@ def test_interactive_template_autocomplete_omits_pointer(
 
     def fake_autocomplete(*_args, **kwargs):
         captured_kwargs.update(kwargs)
-        return FakePrompt("Backend     FastAPI Starter (fastapi-starter)")
+        choices = kwargs.get("choices") or []
+        # Return a mapped title so choice_by_title resolves to the template URL.
+        return FakePrompt(choices[0] if choices else template_url)
 
     def fake_checkbox(*_args, **_kwargs):
         return FakePrompt([])
