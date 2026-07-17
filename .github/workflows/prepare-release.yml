@@ -1,0 +1,70 @@
+name: Prepare release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, e.g. 0.1.1"
+        required: true
+      notes:
+        description: "Markdown changelog notes for this release"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: prepare-release-${{ github.event.inputs.version }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    name: Prepare release bump
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Sync workspace
+        run: uv sync --group dev
+
+      - name: Prepare release files
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          NOTES: ${{ github.event.inputs.notes }}
+        run: |
+          uv run python scripts/prepare_release.py "$VERSION" --notes "$NOTES"
+
+      - name: Verify release notes are extractable
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          uv run python scripts/extract_release_notes.py "$VERSION" --output /tmp/release-notes.md
+          test -s /tmp/release-notes.md
+
+      - name: Create release PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: release/create-awesome-python-app-${{ github.event.inputs.version }}
+          title: "chore(release): prepare ${{ github.event.inputs.version }}"
+          commit-message: "chore(release): prepare ${{ github.event.inputs.version }}"
+          body: |
+            ## Summary
+
+            - bumps `create-python-app-core` and `create-awesome-python-app` to `${{ github.event.inputs.version }}`
+            - updates the CLI dependency on the matching core version
+            - prepends release notes to `CHANGELOG.md`
+
+            ## Release checklist
+
+            - [ ] Review generated version/changelog diff
+            - [ ] Merge this PR
+            - [ ] Tag `create-awesome-python-app@${{ github.event.inputs.version }}`
+            - [ ] Confirm PyPI, Docker, Homebrew, AUR, and distribution smoke workflows
+
+            Closes #195

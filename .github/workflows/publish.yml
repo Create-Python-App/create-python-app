@@ -25,6 +25,16 @@ jobs:
         with:
           python-version-file: .python-version
       - run: uv sync --group dev
+      - name: Resolve release version
+        id: release
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#create-awesome-python-app@}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Extract release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          uv run python scripts/extract_release_notes.py "${{ steps.release.outputs.version }}" --output release-notes.md
       - name: Build packages
         run: |
           mkdir -p dist-core dist-cli
@@ -39,14 +49,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: dist/*
-          body: |
-            First public release. Install with:
-
-            ```bash
-            uvx create-awesome-python-app@0.1.0 --help
-            ```
-
-            Catalog: https://github.com/Create-Python-App/cpa-templates
+          body_path: release-notes.md
       - name: Publish create-python-app-core to PyPI
         if: startsWith(github.ref, 'refs/tags/')
         uses: pypa/gh-action-pypi-publish@release/v1
