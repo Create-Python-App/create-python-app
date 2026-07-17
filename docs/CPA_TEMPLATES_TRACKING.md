@@ -31,7 +31,8 @@ uvx create-awesome-python-app@latest …
 
 It must **not** check out this monorepo or fall back to `uv run` against a local source tree. That way green Actions means the same binary users install works with the templates under test.
 
-CLI CI in this repo stays focused on unit/lint/type/smoke-distribution (`uvx` / Docker / brew / AUR).
+CLI CI in this repo stays focused on unit/lint/type, cross-platform scaffold
+smoke via published `uvx`, and smoke-distribution (`uvx` / Docker / brew / AUR).
 
 ## CNA parity reference
 

@@ -1,0 +1,92 @@
+name: Cross-platform scaffold smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scaffold-cross-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scaffold:
+    name: ${{ matrix.os }} / fastapi-starter
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Scaffold FastAPI starter from PyPI CLI
+        env:
+          TARGET: ${{ runner.temp }}/cpa-fastapi-starter
+        shell: bash
+        run: |
+          set -euo pipefail
+          uvx create-awesome-python-app@latest "$TARGET" \
+            --template fastapi-starter \
+            --no-interactive \
+            --no-install \
+            --force
+
+      - name: Verify scaffolded project
+        env:
+          TARGET: ${{ runner.temp }}/cpa-fastapi-starter
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          target = Path(os.environ["TARGET"])
+          required = [
+              target / "pyproject.toml",
+              target / "app" / "main.py",
+              target / "README.md",
+          ]
+          missing = [str(path) for path in required if not path.exists()]
+          if missing:
+              raise SystemExit(f"Missing scaffolded files: {missing}")
+          print(f"Verified scaffold at {target}")
+          PY
+
+  addon-smoke:
+    name: ubuntu-latest / fastapi-starter + python-docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Scaffold with one extension from PyPI CLI
+        env:
+          TARGET: ${{ runner.temp }}/cpa-fastapi-docker
+        run: |
+          set -euo pipefail
+          uvx create-awesome-python-app@latest "$TARGET" \
+            --template fastapi-starter \
+            --addons python-docker \
+            --no-interactive \
+            --no-install \
+            --force
+
+      - name: Verify extension files
+        env:
+          TARGET: ${{ runner.temp }}/cpa-fastapi-docker
+        run: |
+          set -euo pipefail
+          test -f "$TARGET/Dockerfile"
+          test -f "$TARGET/.dockerignore"
