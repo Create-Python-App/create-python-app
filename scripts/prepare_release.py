@@ -18,8 +18,11 @@ PY_VERSION_RE = re.compile(r'__version__ = "[^"]+"')
 VERSION_FILES = [
     ROOT / "packages/create-python-app-core/pyproject.toml",
     ROOT / "packages/create-awesome-python-app/pyproject.toml",
-    ROOT / "packages/create-python-app-core/src/create_python_app_core/_version.py",
-    ROOT / "packages/create-awesome-python-app/src/create_awesome_python_app/__init__.py",
+    ROOT
+    / "packages/create-python-app-core/src/create_python_app_core/_version.py",
+    ROOT
+    / "packages/create-awesome-python-app/src"
+    / "create_awesome_python_app/__init__.py",
 ]
 
 
@@ -48,12 +51,15 @@ def update_versions(version: str) -> None:
         f'"create-python-app-core>={version}"',
     )
     replace_once(
-        ROOT / "packages/create-python-app-core/src/create_python_app_core/_version.py",
+        ROOT
+        / "packages/create-python-app-core/src/create_python_app_core/_version.py",
         PY_VERSION_RE,
         f'__version__ = "{version}"',
     )
     replace_once(
-        ROOT / "packages/create-awesome-python-app/src/create_awesome_python_app/__init__.py",
+        ROOT
+        / "packages/create-awesome-python-app/src"
+        / "create_awesome_python_app/__init__.py",
         PY_VERSION_RE,
         f'__version__ = "{version}"',
     )
@@ -71,7 +77,8 @@ def update_changelog(version: str, notes: str) -> None:
     section = f"## {version} - {today}\n\n{body}\n\n"
     if not text.startswith("# Changelog\n\n"):
         raise SystemExit("CHANGELOG.md must start with '# Changelog'")
-    changelog.write_text(text.replace("# Changelog\n\n", f"# Changelog\n\n{section}", 1))
+    updated = text.replace("# Changelog\n\n", f"# Changelog\n\n{section}", 1)
+    changelog.write_text(updated)
 
 
 def main() -> None:
