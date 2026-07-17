@@ -20,14 +20,6 @@ from create_awesome_python_app import __version__
 console = Console(stderr=True)
 
 CUSTOM_TEMPLATE_SENTINEL = "__custom_template__"
-_ANSI_RESET = "\033[0m"
-_CATEGORY_PALETTE = (
-    "\033[33m",  # yellow
-    "\033[32m",  # green
-    "\033[36m",  # cyan
-    "\033[35m",  # magenta
-    "\033[34m",  # blue
-)
 
 
 @dataclass(frozen=True)
@@ -172,13 +164,6 @@ def short_category_label(category_name: str) -> str:
     return " ".join(words[:2]) or category_name
 
 
-def _color_category(slug: str, label: str) -> str:
-    if os.environ.get("NO_COLOR"):
-        return label
-    idx = sum(ord(char) for char in slug) % len(_CATEGORY_PALETTE)
-    return f"{_CATEGORY_PALETTE[idx]}{label}{_ANSI_RESET}"
-
-
 def _category_map(data: dict[str, Any]) -> dict[str, str]:
     return {
         str(category.get("slug", "")): str(category.get("name", ""))
@@ -256,8 +241,10 @@ def build_template_choices(data: dict[str, Any]) -> list[TemplateChoice]:
             label_suffix = " · " + ", ".join(str(label) for label in labels[:3])
         description = str(template.get("description", "")).strip()
         description_suffix = f" — {description}" if description else ""
+        # Plain text only: questionary.autocomplete wraps choices in HTML for
+        # match highlighting, so ANSI / markup here raises XML parse errors.
         title = (
-            f"{_color_category(category_slug, badge)}  "
+            f"{badge}  "
             f"{template.get('name', slug)} ({slug})"
             f"{label_suffix}{description_suffix}"
         )

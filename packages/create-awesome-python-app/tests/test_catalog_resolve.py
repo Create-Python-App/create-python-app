@@ -102,10 +102,35 @@ def test_build_template_choices_are_searchable() -> None:
     assert "FastAPI Starter" in first.title
     assert "OpenAPI" in first.title
     assert "uv" in first.title
+    assert "\033" not in first.title
     assert "openapi" in first.search
     assert "backend" in first.search
     assert "uv" in first.search
     assert choices[-1].value == CUSTOM_TEMPLATE_SENTINEL
+
+
+def test_template_choice_titles_are_html_safe_for_questionary() -> None:
+    """questionary.autocomplete formats choice text as HTML (match underline)."""
+    from prompt_toolkit.formatted_text import HTML
+
+    catalog = {
+        "categories": [
+            {"slug": "backend-applications", "name": "Backend Applications"}
+        ],
+        "templates": [
+            {
+                "slug": "fastapi-starter",
+                "name": "FastAPI Starter",
+                "description": "Async API with OpenAPI docs",
+                "url": "file:///templates/fastapi",
+                "category": "backend-applications",
+                "labels": ["FastAPI"],
+            }
+        ],
+    }
+    title = build_template_choices(catalog)[0].title
+    # Must not raise "not well-formed (invalid token)" from ANSI escapes.
+    HTML("{}<b><u>{}</u></b>{}").format(title[:3], title[3:6], title[6:])
 
 
 def test_build_extension_choices_filters_by_template_type() -> None:

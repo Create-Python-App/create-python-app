@@ -108,23 +108,19 @@ From `cpa.config.json` or catalog `customOptions`:
 - `text` for string options
 - Password/invisible types are skipped with a yellow warning
 
-### Category badge colors
+### Category badges
 
-Template list badges use deterministic ANSI colors from `_CATEGORY_PALETTE` in `catalog.py`:
+Interactive template choices use a plain fixed-width badge from
+`short_category_label()` (strips "Applications", "Application", "Boilerplate";
+abbreviates long names to initials). Titles stay plain text because
+`questionary.autocomplete` wraps choices in HTML for match highlighting — ANSI
+or other markup raises XML parse errors in prompt_toolkit.
 
-| Index | ANSI color | Typical use |
-|-------|------------|-------------|
-| 0 | yellow (`\033[33m`) | category badge |
-| 1 | green (`\033[32m`) | category badge |
-| 2 | cyan (`\033[36m`) | category badge |
-| 3 | magenta (`\033[35m`) | category badge |
-| 4 | blue (`\033[34m`) | category badge |
+`--list-templates` uses Rich tables for color, not ANSI in choice strings.
 
-Color selection: `sum(ord(char) for char in category_slug) % 5`. Respects `NO_COLOR` (plain text, no ANSI).
-
-Badge label: compact form from `short_category_label()` (strips "Applications", "Application", "Boilerplate"; abbreviates long names to initials).
-
-Design implication: terminal category colors are slug-hash-driven, not semantically mapped (e.g. "backend" is not always blue). A future brand system may want stable category-to-color mapping for docs and website cards.
+Design implication: if terminal category color returns, prefer Rich styling or
+a prompt library that does not HTML-parse choice titles (CNA uses `prompts` +
+picocolors).
 
 ### Rich semantic color usage
 
@@ -195,7 +191,7 @@ The CLI experience is functional and CNA-aligned for catalog flows, but the broa
 Current CLI aesthetic:
 
 - Rich semantic colors (red/yellow/green/cyan/dim).
-- Hash-based category badge colors in terminal.
+- Plain fixed-width category badges in autocomplete titles (HTML-safe for questionary).
 - Minimal hero SVG (slate + teal).
 - No startup banner or branded prompt chrome beyond questionary defaults.
 
@@ -294,7 +290,7 @@ Before implementation, produce a complete audit answering:
 - What should the brand personality become?
 - Does the CLI first run explain the product clearly in the first 5 seconds?
 - Do autocomplete and checkbox flows feel premium and discoverable?
-- Should category badge colors become semantic instead of hash-based?
+- Should website/docs category badges use semantic colors (CLI titles stay plain for questionary)?
 - Does the PyPI package README convert visitors into users?
 - Does the root GitHub README convert visitors into contributors?
 - Are templates presented in a way that feels premium and trustworthy?
@@ -367,7 +363,7 @@ Visual identity:
 - Define illustration/hero style.
 - Define voice and tone (match CLI error copy guidelines).
 - Define how "cozy" and "developer infrastructure" coexist.
-- Map `_CATEGORY_PALETTE` colors to branded hex values for non-terminal surfaces.
+- Define category badge colors for website/docs cards (CLI autocomplete titles stay plain text).
 
 ## Constraints And Standards
 
@@ -410,7 +406,7 @@ Environment variables affecting UX:
 | Variable | Effect |
 |----------|--------|
 | `CI` | Disables interactive prompts unless `--interactive` |
-| `NO_COLOR` | Disables category badge ANSI colors |
+| `NO_COLOR` | Honored by Rich output (list tables, messages) |
 | `CPA_CATALOG_URL` | Override catalog source |
 | `CPA_NO_CATALOG_CACHE` | Force catalog refresh |
 | `CPA_STRICT_VERSION` | Treat version mismatch as error |
@@ -424,7 +420,10 @@ We need to do a full UI/UX and branding review of the Create Python App ecosyste
 
 Please start with discovery and audit before implementing. Review the root create-python-app repo, the package README, cpa-templates, and docs/BRAND.md. The goal is to improve engagement, attraction, branding, cozy developer experience, visual consistency, and conversion across GitHub, PyPI, docs, CLI, and generated starter UIs.
 
-The CLI already uses Rich on stderr, questionary autocomplete/checkbox flows, and hash-based category badge colors from catalog.py. Evaluate whether those defaults should evolve into a cohesive brand system. Pay attention to error message tone, interactive vs CI non-interactive behavior, and the minimal hero SVG.
+The CLI already uses Rich on stderr and questionary autocomplete/checkbox flows
+with plain-text category badges (HTML-safe for prompt_toolkit). Evaluate whether
+those defaults should evolve into a cohesive brand system. Pay attention to error
+message tone, interactive vs CI non-interactive behavior, and the minimal hero SVG.
 
 Previous work established basic READMEs and BRAND.md notes, but now I want a broader review and a stronger cohesive brand direction. Do not assume the current teal-on-slate hero or terminal colors are final.
 
