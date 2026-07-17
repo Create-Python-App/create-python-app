@@ -127,6 +127,21 @@ brew install create-awesome-python-app && create-awesome-python-app --version
 yay -S create-awesome-python-app && create-awesome-python-app --version
 ```
 
+## Scheduled distribution smoke
+
+`Distribution smoke tests` runs daily and can also be dispatched manually:
+
+```bash
+gh workflow run "Distribution smoke tests" --repo Create-Python-App/create-python-app
+gh run list --workflow smoke-distribution.yml --repo Create-Python-App/create-python-app --limit 5
+```
+
+Before closing distribution issues, link a green run that covers all published
+channels: PyPI via `uvx`, Docker Hub, Homebrew, AUR, and the cross-channel
+version summary. Channel version mismatches are warnings when a downstream
+package can legitimately lag PyPI, but install/help/version failures must stay
+red.
+
 ## After secrets are in place
 
 Every subsequent release only requires tagging `create-awesome-python-app@X.Y.Z`.
