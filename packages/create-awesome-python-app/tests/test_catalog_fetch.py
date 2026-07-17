@@ -81,6 +81,5 @@ def test_get_catalog_data_disk_fallback_on_network_error(
     assert data["templates"][0]["slug"] == "cached"
 
 
-
 def test_default_url_points_to_cpa_templates() -> None:
     assert DEFAULT_CATALOG_URL.endswith("/cpa-templates/main/templates.json")
