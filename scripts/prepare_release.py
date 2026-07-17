@@ -18,8 +18,7 @@ PY_VERSION_RE = re.compile(r'__version__ = "[^"]+"')
 VERSION_FILES = [
     ROOT / "packages/create-python-app-core/pyproject.toml",
     ROOT / "packages/create-awesome-python-app/pyproject.toml",
-    ROOT
-    / "packages/create-python-app-core/src/create_python_app_core/_version.py",
+    ROOT / "packages/create-python-app-core/src/create_python_app_core/_version.py",
     ROOT
     / "packages/create-awesome-python-app/src"
     / "create_awesome_python_app/__init__.py",
@@ -51,8 +50,7 @@ def update_versions(version: str) -> None:
         f'"create-python-app-core>={version}"',
     )
     replace_once(
-        ROOT
-        / "packages/create-python-app-core/src/create_python_app_core/_version.py",
+        ROOT / "packages/create-python-app-core/src/create_python_app_core/_version.py",
         PY_VERSION_RE,
         f'__version__ = "{version}"',
     )
