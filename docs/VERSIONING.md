@@ -32,7 +32,7 @@ After the release-prep PR is merged:
 2. Push the tag
 3. `publish.yml` builds and publishes both packages to PyPI via OIDC (see #58)
 4. GitHub Release notes are extracted from the matching `CHANGELOG.md` section
-5. Distribution workflows update Docker, Homebrew, and AUR
+5. After Release succeeds, Docker / Homebrew / AUR workflows run
 
 ```bash
 git tag create-awesome-python-app@X.Y.Z

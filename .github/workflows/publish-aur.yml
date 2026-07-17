@@ -1,12 +1,12 @@
 name: Publish to AUR
 
-# Triggers on release tags for the CLI package.
+# Runs after Release succeeds (PyPI already uploaded), or manually.
 # Publishes the updated PKGBUILD to aur.archlinux.org and keeps the
 # Create-Python-App/aur-package GitHub mirror in sync.
 on:
-  push:
-    tags:
-      - "create-awesome-python-app@*"
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -28,6 +28,10 @@ env:
 jobs:
   aur:
     name: Update AUR package
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_branch, 'create-awesome-python-app@'))
     runs-on: ubuntu-latest
     environment: pypi
     timeout-minutes: 20
@@ -35,13 +39,14 @@ jobs:
       - name: Resolve version
         id: version
         env:
-          TAG_REF: ${{ github.ref_name }}
           INPUT_VERSION: ${{ github.event.inputs.version }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
-          if [ -n "$INPUT_VERSION" ]; then
+          set -euo pipefail
+          if [ -n "${INPUT_VERSION:-}" ]; then
             VERSION="$INPUT_VERSION"
           else
-            VERSION="${TAG_REF#create-awesome-python-app@}"
+            VERSION="${RUN_BRANCH#create-awesome-python-app@}"
           fi
           if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]+)?$'; then
             echo "::error::Invalid AUR package version: $VERSION"
@@ -82,7 +87,8 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=${NEW_VERSION}/" PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
 
-          META=$(retry 5 10 curl -sfL "https://pypi.org/pypi/${PYPI_PACKAGE}/${NEW_VERSION}/json")
+          # PyPI CDN can lag the upload response; poll for indexing.
+          META=$(retry 24 15 curl -sfL "https://pypi.org/pypi/${PYPI_PACKAGE}/${NEW_VERSION}/json")
           SHA=$(echo "$META" | jq -r '.urls[] | select(.packagetype=="sdist") | .digests.sha256')
           if [ -z "$SHA" ] || [ "$SHA" = "null" ]; then
             echo "::error::Failed to resolve PyPI sdist sha256 for v${NEW_VERSION}" >&2
@@ -133,8 +139,6 @@ jobs:
           retry 5 15 git ls-remote "https://aur.archlinux.org/${AUR_PACKAGE}.git" >/dev/null
 
       - name: Publish to AUR
-        # Pushes to aur.archlinux.org via SSH. The action reads the
-        # updated PKGBUILD, regenerates .SRCINFO, and pushes.
         uses: ulises-jeremias/github-actions-aur-publish@217e4e2abbbee9ecc942bdc0681302e233656d9f # v1
         with:
           pkgname: create-awesome-python-app
@@ -144,8 +148,6 @@ jobs:
           commit_message: "Update to version ${{ steps.version.outputs.version }}"
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           allow_empty_commits: "false"
-          # dsa is no longer supported in modern OpenSSH; omit it to
-          # avoid "Unknown key type" errors during keyscan.
           ssh_keyscan_types: "rsa,ecdsa,ed25519"
 
       - name: Verify AUR RPC after publish
@@ -193,9 +195,6 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Sync updated PKGBUILD to GitHub mirror
-        # Keep the aur-package GitHub mirror in sync with what's live
-        # on AUR. Only PKGBUILD needs to be committed here — .SRCINFO
-        # is regenerated automatically by AUR from PKGBUILD.
         uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
         with:
           repository: aur-package
