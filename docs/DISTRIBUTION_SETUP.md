@@ -42,7 +42,7 @@ git push origin create-awesome-python-app@X.Y.Z
 Then:
 
 1. Confirm **Release** (PyPI + GitHub Release) succeeds — Docker, AUR, and
-   Homebrew notify then start via `workflow_run`
+  Homebrew notify then start via `workflow_run`
 2. Confirm those three workflows complete
 3. Smoke: `uvx --python 3.12 create-awesome-python-app@X.Y.Z --help`
 

@@ -6,12 +6,12 @@ Canonical visual identity for Create Awesome Python App across GitHub, PyPI, the
 
 **Python node-graph** — composition-first scaffolding with a cool blue → green mark (distinct from Create Node App’s cozy amber → teal nest).
 
-| Token   | Value                 | Use                              |
-|---------|-----------------------|----------------------------------|
-| Blue    | `#3b82f6` / `#2563eb` | Primary accent, CTAs, highlights |
-| Green   | `#16a34a` / `#22c55e` | Secondary accent, success, links |
-| Dark bg | `#0f172a`             | Default surfaces                 |
-| Light bg| `#f8fafc`             | Light-mode surfaces              |
+| Token    | Value                 | Use                              |
+|----------|-----------------------|----------------------------------|
+| Blue     | `#3b82f6` / `#2563eb` | Primary accent, CTAs, highlights |
+| Green    | `#16a34a` / `#22c55e` | Secondary accent, success, links |
+| Dark bg  | `#0f172a`             | Default surfaces                 |
+| Light bg | `#f8fafc`             | Light-mode surfaces              |
 
 Primary gradient: `135deg, #3b82f6 → #2563eb → #16a34a`.
 
