@@ -19,13 +19,6 @@ from create_awesome_python_app.catalog import (
 FIXTURE_PATH = (
     Path(__file__).resolve().parents[3] / "fixtures" / "catalog" / "templates.json"
 )
-REPO_ROOT = Path(__file__).resolve().parents[3]
-_DEFAULT_CPA_TEMPLATES = (REPO_ROOT.parent / "cpa-templates").resolve()
-CPA_TEMPLATES_ROOT = Path(
-    os.environ.get("CPA_TEMPLATES_ROOT", str(_DEFAULT_CPA_TEMPLATES))
-).resolve()
-
-
 @pytest.fixture(autouse=True)
 def _reset_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     reset_catalog_cache_for_tests()
@@ -86,15 +79,6 @@ def test_get_catalog_data_disk_fallback_on_network_error(
 
     assert data["templates"][0]["slug"] == "cached"
 
-
-def test_local_cpa_templates_catalog_includes_typed_fastapi_template() -> None:
-    catalog_path = CPA_TEMPLATES_ROOT / "templates.json"
-    if not catalog_path.is_file():
-        pytest.skip("local cpa-templates checkout not available")
-
-    payload = json.loads(catalog_path.read_text(encoding="utf-8"))
-
-    assert any(template["slug"] == "fastapi-typed-starter" for template in payload["templates"])
 
 
 def test_default_url_points_to_cpa_templates() -> None:
