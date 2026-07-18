@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.5 - 2026-07-18
+
+### Fixes
+
+- Git cache refresh now advances HEAD to the remote default tip when `?ref=` is unset (CNA pull parity)
+- Force-refresh when a configured template/extension `subdir` is missing from a warm cache (fixes post-rename `ManifestLoadError` for `all-github-setup` and friends)
+
 ## 0.2.4 - 2026-07-18
 
 ### Prompt rendering
