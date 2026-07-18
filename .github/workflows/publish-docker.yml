@@ -85,13 +85,14 @@ jobs:
               wheel_ok=1
             fi
             if [ "$json_ok" -eq 1 ] && [ "$simple_ok" -eq 1 ] && [ "$wheel_ok" -eq 1 ]; then
-              echo "PyPI JSON + simple index + wheel URL have ${PACKAGE}==${VERSION}"
+              echo "PyPI ready for ${PACKAGE}==${VERSION} (json+simple+wheel)"
               exit 0
             fi
-            echo "::warning::PyPI not ready for ${PACKAGE}==${VERSION} (json=${json_ok} simple=${simple_ok} wheel=${wheel_ok}; attempt ${attempt}/${attempts}); retrying in ${delay}s"
+            echo "::warning::PyPI not ready for ${PACKAGE}==${VERSION}"
+            echo "::warning::json=${json_ok} simple=${simple_ok} wheel=${wheel_ok} attempt=${attempt}/${attempts}; sleep ${delay}s"
             sleep "$delay"
           done
-          echo "::error::Timed out waiting for ${PACKAGE}==${VERSION} on PyPI (JSON + simple index + wheel)"
+          echo "::error::Timed out waiting for ${PACKAGE}==${VERSION} on PyPI"
           exit 1
 
       - name: Set up QEMU
