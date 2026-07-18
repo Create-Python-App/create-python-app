@@ -1,12 +1,12 @@
 [project]
 name = "create-awesome-python-app"
-version = "0.2.2"
+version = "0.2.3"
 description = "Composable scaffolding CLI for production-ready Python apps"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 dependencies = [
-    "create-python-app-core>=0.2.2",
+    "create-python-app-core>=0.2.3",
     "questionary>=2.1.1",
     "rich>=15.0.0",
     "typer>=0.27.0",
