@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4 - 2026-07-18
+
+### Prompt rendering
+
+- Template select titles use FormattedText styles (no more literal `^[[1;94m` ANSI escapes)
+
 ## 0.2.3 - 2026-07-18
 
 ### Discovery UX
