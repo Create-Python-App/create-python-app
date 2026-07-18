@@ -50,7 +50,7 @@
       "name": "GitHub Setup",
       "slug": "github-setup",
       "description": "GitHub Actions CI, Dependabot, issue templates",
-      "url": "https://github.com/Create-Python-App/cpa-templates?subdir=extensions/github-setup",
+      "url": "https://github.com/Create-Python-App/cpa-templates?subdir=extensions/all-github-setup",
       "type": ["fastapi-backend"],
       "category": "tooling",
       "labels": ["GitHub", "CI"]

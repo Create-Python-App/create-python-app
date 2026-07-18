@@ -14,7 +14,7 @@ CPA_TEMPLATES_ROOT = Path(
     os.environ.get("CPA_TEMPLATES_ROOT", str(_DEFAULT_CPA_TEMPLATES))
 ).resolve()
 FASTAPI_TEMPLATE = CPA_TEMPLATES_ROOT / "templates" / "fastapi-starter"
-GITHUB_SETUP = CPA_TEMPLATES_ROOT / "extensions" / "github-setup"
+GITHUB_SETUP = CPA_TEMPLATES_ROOT / "extensions" / "all-github-setup"
 
 
 def _cpa_templates_available() -> bool:
@@ -143,7 +143,7 @@ def test_scaffold_via_catalog_addon_slug(
         "extensions": [
             {
                 "slug": "github-setup",
-                "url": f"file://{repo}?subdir=extensions/github-setup",
+                "url": f"file://{repo}?subdir=extensions/all-github-setup",
             }
         ],
         "categories": [],
@@ -196,7 +196,7 @@ def test_scaffold_fastapi_with_github_setup_extension(
             "--template",
             f"file://{repo}?subdir=templates/fastapi-starter",
             "--addons",
-            f"file://{repo}?subdir=extensions/github-setup",
+            f"file://{repo}?subdir=extensions/all-github-setup",
             "--no-interactive",
             "--no-install",
             str(dest),
