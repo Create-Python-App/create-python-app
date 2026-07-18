@@ -65,6 +65,25 @@ jobs:
           test -s /tmp/cpa-help.txt
           python3 -c "from pathlib import Path; print('\n'.join(Path('/tmp/cpa-help.txt').read_text().splitlines()[:5]))"
 
+      # Image must ship git so template/extension clones work (see #219).
+      - name: Verify scaffold smoke
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cpa-docker-smoke
+          docker run --rm \
+            -e CI=true \
+            -v /tmp/cpa-docker-smoke:/out \
+            -w /out \
+            "$DOCKER_IMAGE:latest" \
+            --template fastapi-starter \
+            --addons github-setup \
+            --no-interactive \
+            --no-install \
+            --refresh always \
+            /out/app
+          test -d /tmp/cpa-docker-smoke/app/.github/workflows
+          test -d /tmp/cpa-docker-smoke/app/app
+
   homebrew:
     name: Homebrew (Create-Python-App/tap)
     runs-on: macos-latest

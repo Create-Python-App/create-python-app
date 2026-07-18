@@ -6,6 +6,12 @@ FROM python:3.12-slim-bookworm
 # reproducible for its tag).
 ARG VERSION=latest
 
+# git is required to clone cpa-templates (see #219).
+# hadolint ignore=DL3008
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Retry pip install: PyPI simple-index / CDN edges can lag the JSON API
 # that CI already observed as ready (see #217).
 # hadolint ignore=DL3013
