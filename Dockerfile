@@ -6,13 +6,22 @@ FROM python:3.12-slim-bookworm
 # reproducible for its tag).
 ARG VERSION=latest
 
+# Retry pip install: PyPI simple-index / CDN edges can lag the JSON API
+# that CI already observed as ready (see #217).
 # hadolint ignore=DL3013
 RUN useradd --create-home --uid 1000 --shell /bin/bash app \
     && if [ "$VERSION" = "latest" ]; then \
-        pip install --no-cache-dir create-awesome-python-app; \
+        pkg="create-awesome-python-app"; \
     else \
-        pip install --no-cache-dir "create-awesome-python-app==${VERSION}"; \
-    fi
+        pkg="create-awesome-python-app==${VERSION}"; \
+    fi \
+    && attempt=1 \
+    && until pip install --no-cache-dir "$pkg"; do \
+        if [ "$attempt" -ge 12 ]; then exit 1; fi; \
+        echo "pip install failed (attempt ${attempt}/12); retrying in 15s"; \
+        attempt=$((attempt + 1)); \
+        sleep 15; \
+    done
 
 USER app
 WORKDIR /home/app

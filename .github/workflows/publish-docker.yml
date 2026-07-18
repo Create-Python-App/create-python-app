@@ -54,24 +54,44 @@ jobs:
             echo "minor=$MINOR"
           } >> "$GITHUB_OUTPUT"
 
+      # JSON API can return 200 before the simple index / CDN edges that pip
+      # hits inside the Docker build. Require JSON + simple-index listing +
+      # a reachable wheel URL before building (see #217).
       - name: Wait for PyPI package
         env:
           VERSION: ${{ steps.version.outputs.version }}
           PACKAGE: create-awesome-python-app
         run: |
           set -euo pipefail
-          attempts=24
+          attempts=36
           delay=15
+          normalized="${PACKAGE//-/_}"
           for attempt in $(seq 1 "$attempts"); do
+            json_ok=0
+            simple_ok=0
+            wheel_ok=0
             if curl -sfL "https://pypi.org/pypi/${PACKAGE}/${VERSION}/json" \
               | jq -e '.urls[] | select(.packagetype=="sdist") | .digests.sha256' >/dev/null; then
-              echo "PyPI has ${PACKAGE}==${VERSION}"
+              json_ok=1
+            fi
+            if curl -sfL "https://pypi.org/simple/${PACKAGE}/" \
+              | grep -Fq "${normalized}-${VERSION}"; then
+              simple_ok=1
+            fi
+            wheel_url="$(curl -sfL "https://pypi.org/pypi/${PACKAGE}/${VERSION}/json" \
+              | jq -r '.urls[] | select(.packagetype=="bdist_wheel") | .url' \
+              | head -n1 || true)"
+            if [ -n "${wheel_url}" ] && curl -sfI "$wheel_url" >/dev/null; then
+              wheel_ok=1
+            fi
+            if [ "$json_ok" -eq 1 ] && [ "$simple_ok" -eq 1 ] && [ "$wheel_ok" -eq 1 ]; then
+              echo "PyPI JSON + simple index + wheel URL have ${PACKAGE}==${VERSION}"
               exit 0
             fi
-            echo "::warning::PyPI not ready for ${PACKAGE}==${VERSION} (attempt ${attempt}/${attempts}); retrying in ${delay}s"
+            echo "::warning::PyPI not ready for ${PACKAGE}==${VERSION} (json=${json_ok} simple=${simple_ok} wheel=${wheel_ok}; attempt ${attempt}/${attempts}); retrying in ${delay}s"
             sleep "$delay"
           done
-          echo "::error::Timed out waiting for ${PACKAGE}==${VERSION} on PyPI"
+          echo "::error::Timed out waiting for ${PACKAGE}==${VERSION} on PyPI (JSON + simple index + wheel)"
           exit 1
 
       - name: Set up QEMU
