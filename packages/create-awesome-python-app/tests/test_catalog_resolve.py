@@ -261,7 +261,10 @@ def test_validate_extension_compatibility_ok() -> None:
             {"slug": "fastapi-docker", "url": "file:///ext/docker"},
         ]
     }
-    validate_extension_compatibility(["github-setup", "fastapi-docker"], catalog=catalog)
+    validate_extension_compatibility(
+        ["github-setup", "fastapi-docker"],
+        catalog=catalog,
+    )
 
 
 def test_validate_extension_compatibility_fails_on_pair() -> None:
