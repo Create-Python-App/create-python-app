@@ -16,7 +16,10 @@ from rich.console import Console
 from rich.table import Table
 
 from create_awesome_python_app import __version__
-from create_awesome_python_app.prompt_style import bold, color_category, dim
+from create_awesome_python_app.prompt_style import (
+    custom_template_title,
+    template_title_tokens,
+)
 
 console = Console(stderr=True)
 
@@ -27,7 +30,7 @@ CUSTOM_TEMPLATE_SENTINEL = "__custom_template__"
 class TemplateChoice:
     """Searchable interactive template choice."""
 
-    title: str
+    title: Any
     value: str
     search: str
 
@@ -236,35 +239,40 @@ def build_template_choices(data: dict[str, Any]) -> list[TemplateChoice]:
         category_name = categories.get(category_slug, category_slug)
         badge = short_category_label(category_name).ljust(10)[:10]
         slug = str(template.get("slug", ""))
-        labels = template.get("labels", [])
-        label_suffix = ""
-        if isinstance(labels, list) and labels:
-            label_suffix = dim(" · " + ", ".join(str(label) for label in labels[:3]))
+        labels_raw = template.get("labels", [])
+        labels = (
+            [str(label) for label in labels_raw[:3]]
+            if isinstance(labels_raw, list)
+            else []
+        )
         description = str(template.get("description", "")).strip()
-        # Keep slug + short description in the title so select(use_search_filter)
-        # can match them (filter scans Choice.title only).
-        description_suffix = dim(f" — {description}") if description else ""
         name = str(template.get("name", slug))
-        # ANSI is OK here: questionary.select renders titles as terminal text.
-        # Do not pass these titles to autocomplete (HTML match highlighting).
-        title = (
-            f"{color_category(category_slug, badge)}  "
-            f"{bold(name)} ({slug})"
-            f"{label_suffix}{description_suffix}"
+        search = _search_text(template, category_name)
+        # FormattedText tokens (not raw ANSI): select() prints str titles
+        # literally, which showed ^[[1;94m… in terminals.
+        title = template_title_tokens(
+            category_slug=category_slug,
+            badge=badge,
+            name=name,
+            slug=slug,
+            labels=labels,
+            description=description,
+            search=search,
         )
         choices.append(
             TemplateChoice(
                 title=title,
                 value=template_url,
-                search=_search_text(template, category_name),
+                search=search,
             )
         )
 
+    custom_search = "custom own template url github file"
     choices.append(
         TemplateChoice(
-            title=" " * 12 + dim("Use my own template URL"),
+            title=custom_template_title(custom_search),
             value=CUSTOM_TEMPLATE_SENTINEL,
-            search="custom own template url github file",
+            search=custom_search,
         )
     )
     return choices

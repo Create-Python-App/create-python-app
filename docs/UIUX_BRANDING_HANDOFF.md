@@ -112,14 +112,11 @@ From `cpa.config.json` or catalog `customOptions`:
 ### Category badges
 
 Interactive template choices use a fixed-width badge from `short_category_label()`
-with bright bold ANSI colors (`prompt_style.color_category`) so they stay readable
-on dark terminals. Titles may include ANSI because the picker is
-`questionary.select(..., use_search_filter=True)` — **not** autocomplete (which
-HTML-parses choice text and breaks on ANSI).
+styled with prompt_toolkit FormattedText tokens (`prompt_style.template_title_tokens`).
+Raw ANSI in string titles is avoided — `select()` prints those escapes literally
+(`^[[1;94m…`). Titles are `SearchableFormattedText` so `use_search_filter` still works.
 
-Respects `NO_COLOR`. `--list-templates` uses Rich tables for color.
-
-UX: ↑↓ browse the full catalog, type to filter, Enter to pick (CNA-parity discovery).
+Respects `NO_COLOR` (plain string titles). `--list-templates` uses Rich tables.
 
 ### Rich semantic color usage
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from questionary import Style
 
@@ -25,37 +26,88 @@ CPA_PROMPT_STYLE = Style.from_dict(
     }
 )
 
+# Bright prompt_toolkit style strings (not raw ANSI — select() prints str titles
+# literally, so escapes show as ^[[...m unless titles are FormattedText tokens).
+_CATEGORY_STYLES = (
+    "fg:#facc15 bold",  # yellow
+    "fg:#4ade80 bold",  # green
+    "fg:#22d3ee bold",  # cyan
+    "fg:#e879f9 bold",  # magenta
+    "fg:#60a5fa bold",  # blue
+)
+
+
+class SearchableFormattedText(list):
+    """FormattedText tokens with ``.lower()`` for questionary search filter.
+
+    ``select(use_search_filter=True)`` does ``needle in choice.title.lower()``.
+    A plain token list has no ``.lower()``; this keeps filter working while
+    titles render as styled FormattedText.
+    """
+
+    def __init__(self, tokens: list[tuple[str, str]], search: str) -> None:
+        super().__init__(tokens)
+        self._search = search
+
+    def lower(self) -> str:
+        return self._search.lower()
+
 
 def colors_enabled() -> bool:
     return not os.environ.get("NO_COLOR")
 
 
-def ansi(code: str, text: str) -> str:
-    """Wrap *text* in an ANSI SGR sequence when colors are enabled."""
+def category_style(slug: str) -> str:
+    idx = sum(ord(char) for char in slug) % len(_CATEGORY_STYLES)
+    return _CATEGORY_STYLES[idx]
+
+
+def plain_title_text(title: Any) -> str:
+    """Join FormattedText token text (or return a plain string title)."""
+    if isinstance(title, list):
+        return "".join(str(token[1]) for token in title)
+    return str(title)
+
+
+def template_title_tokens(
+    *,
+    category_slug: str,
+    badge: str,
+    name: str,
+    slug: str,
+    labels: list[str],
+    description: str,
+    search: str,
+) -> SearchableFormattedText | str:
+    """Build a select-safe title: FormattedText when colors on, else plain str."""
+    label_suffix = ""
+    if labels:
+        label_suffix = " · " + ", ".join(labels[:3])
+    description_suffix = f" — {description}" if description else ""
+    plain = f"{badge}  {name} ({slug}){label_suffix}{description_suffix}"
+
     if not colors_enabled():
-        return text
-    return f"\033[{code}m{text}\033[0m"
+        return plain
+
+    tokens: list[tuple[str, str]] = [
+        (category_style(category_slug), badge),
+        ("", "  "),
+        ("bold", name),
+        ("class:instruction", f" ({slug})"),
+    ]
+    if label_suffix:
+        tokens.append(("class:instruction", label_suffix))
+    if description_suffix:
+        tokens.append(("fg:#94a3b8", description_suffix))
+    return SearchableFormattedText(tokens, search=search or plain)
 
 
-# Bold bright ANSI — readable on dark terminals; select() renders these safely
-# (unlike autocomplete, which HTML-parses choice text).
-_CATEGORY_PALETTE = (
-    "1;93",  # bright yellow
-    "1;92",  # bright green
-    "1;96",  # bright cyan
-    "1;95",  # bright magenta
-    "1;94",  # bright blue
-)
-
-
-def color_category(slug: str, label: str) -> str:
-    idx = sum(ord(char) for char in slug) % len(_CATEGORY_PALETTE)
-    return ansi(_CATEGORY_PALETTE[idx], label)
-
-
-def bold(text: str) -> str:
-    return ansi("1", text)
-
-
-def dim(text: str) -> str:
-    return ansi("2", text)
+def custom_template_title(search: str) -> SearchableFormattedText | str:
+    label = "Use my own template URL"
+    plain = " " * 12 + label
+    if not colors_enabled():
+        return plain
+    return SearchableFormattedText(
+        [("", " " * 12), ("italic fg:#94a3b8", label)],
+        search=search or plain,
+    )

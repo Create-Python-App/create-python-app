@@ -17,6 +17,10 @@ from create_awesome_python_app.catalog import (
     short_category_label,
     validate_extension_compatibility,
 )
+from create_awesome_python_app.prompt_style import (
+    SearchableFormattedText,
+    plain_title_text,
+)
 
 SAMPLE_CATALOG = {
     "templates": [
@@ -99,19 +103,18 @@ def test_build_template_choices_are_searchable() -> None:
     choices = build_template_choices(catalog)
     first = choices[0]
     assert first.value == "file:///templates/fastapi"
-    assert "FastAPI Starter" in first.title
-    assert "OpenAPI" in first.title
-    assert "uv" in first.title
+    title_text = plain_title_text(first.title)
+    assert "FastAPI Starter" in title_text
+    assert "OpenAPI" in title_text
+    assert "uv" in title_text
     assert "openapi" in first.search
     assert "backend" in first.search
     assert "uv" in first.search
     assert choices[-1].value == CUSTOM_TEMPLATE_SENTINEL
 
 
-def test_template_choice_titles_include_bright_category_ansi(
-    monkeypatch,
-) -> None:
-    """select() can render ANSI; badges use bright bold codes for contrast."""
+def test_template_choice_titles_use_formatted_text(monkeypatch) -> None:
+    """select() needs FormattedText tokens; raw ANSI shows as ^[[…m."""
     monkeypatch.delenv("NO_COLOR", raising=False)
     catalog = {
         "categories": [
@@ -127,8 +130,10 @@ def test_template_choice_titles_include_bright_category_ansi(
         ],
     }
     title = build_template_choices(catalog)[0].title
-    assert "\033[" in title
-    assert "FastAPI Starter" in title
+    assert isinstance(title, SearchableFormattedText)
+    assert "\033" not in plain_title_text(title)
+    assert "FastAPI Starter" in plain_title_text(title)
+    assert "fastapi" in title.lower()
 
 
 def test_template_choice_titles_respect_no_color(monkeypatch) -> None:
@@ -147,6 +152,7 @@ def test_template_choice_titles_respect_no_color(monkeypatch) -> None:
         ],
     }
     title = build_template_choices(catalog)[0].title
+    assert isinstance(title, str)
     assert "\033" not in title
     assert "FastAPI Starter" in title
 
