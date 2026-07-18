@@ -28,10 +28,10 @@ def test_in_ci_env(monkeypatch) -> None:
     os.environ.pop("CI", None)
 
 
-def test_interactive_template_autocomplete_omits_pointer(
+def test_interactive_template_select_uses_search_filter(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """questionary.autocomplete rejects ``pointer`` (PromptSession TypeError)."""
+    """Template pick is a browsable select with type-to-filter (not autocomplete)."""
     template_dir = tmp_path / "fastapi"
     template_dir.mkdir()
     (template_dir / "cpa.config.json").write_text(
@@ -60,11 +60,9 @@ def test_interactive_template_autocomplete_omits_pointer(
 
     captured_kwargs: dict[str, object] = {}
 
-    def fake_autocomplete(*_args, **kwargs):
+    def fake_select(*_args, **kwargs):
         captured_kwargs.update(kwargs)
-        choices = kwargs.get("choices") or []
-        # Return a mapped title so choice_by_title resolves to the template URL.
-        return FakePrompt(choices[0] if choices else template_url)
+        return FakePrompt(template_url)
 
     def fake_checkbox(*_args, **_kwargs):
         return FakePrompt([])
@@ -75,7 +73,7 @@ def test_interactive_template_autocomplete_omits_pointer(
         captured["project_directory"] = project_directory
         captured["options"] = options
 
-    monkeypatch.setattr("questionary.autocomplete", fake_autocomplete)
+    monkeypatch.setattr("questionary.select", fake_select)
     monkeypatch.setattr("questionary.checkbox", fake_checkbox)
     monkeypatch.setattr(
         "create_awesome_python_app.cli.create_python_app",
@@ -89,7 +87,9 @@ def test_interactive_template_autocomplete_omits_pointer(
     result = runner.invoke(app, ["--interactive", "--no-install", "api"])
 
     assert result.exit_code == 0, result.stdout + result.stderr
-    assert "pointer" not in captured_kwargs
+    assert captured_kwargs.get("use_search_filter") is True
+    assert captured_kwargs.get("use_jk_keys") is False
+    assert captured_kwargs.get("style") is not None
     assert captured["project_directory"] == "api"
 
 

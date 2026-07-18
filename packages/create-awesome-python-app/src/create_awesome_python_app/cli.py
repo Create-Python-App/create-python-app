@@ -104,6 +104,8 @@ def _prompt_custom_options(
 ) -> dict[str, str]:
     import questionary
 
+    from create_awesome_python_app.prompt_style import CPA_PROMPT_STYLE
+
     source = resolve_source(template, cache_dir=cache_dir)
     root = download_repository(
         source,
@@ -138,9 +140,12 @@ def _prompt_custom_options(
             answer = questionary.confirm(
                 message,
                 default=initial.lower() in {"1", "true", "yes", "on"},
+                style=CPA_PROMPT_STYLE,
             ).ask()
         else:
-            answer = questionary.text(message, default=initial).ask()
+            answer = questionary.text(
+                message, default=initial, style=CPA_PROMPT_STYLE
+            ).ask()
         if answer is None:
             raise typer.Exit(1)
         answers[option.key] = _stringify_option_value(answer)
@@ -230,30 +235,38 @@ def scaffold(
     if want_interactive and not template:
         try:
             import questionary
+            from questionary import Choice
 
             from create_awesome_python_app.catalog import (
                 CUSTOM_TEMPLATE_SENTINEL,
                 build_template_choices,
                 get_catalog_data,
             )
+            from create_awesome_python_app.prompt_style import CPA_PROMPT_STYLE
 
             interactive_catalog = get_catalog_data()
             template_choices = build_template_choices(interactive_catalog)
-            choice_by_title = {
-                choice.title: choice.value for choice in template_choices
-            }
-            selected_title = questionary.autocomplete(
-                "Pick a template (type to search)",
-                choices=list(choice_by_title),
-                match_middle=True,
+            # select + type-to-filter: browseable list (CNA-style discovery)
+            # instead of autocomplete-only. use_jk_keys must be False with search.
+            selected_template = questionary.select(
+                "Pick a template",
+                choices=[
+                    Choice(title=choice.title, value=choice.value)
+                    for choice in template_choices
+                ],
                 qmark="?",
+                pointer="❯",
+                style=CPA_PROMPT_STYLE,
+                use_search_filter=True,
+                use_jk_keys=False,
+                instruction="(↑↓ browse · type to filter · Enter)",
             ).ask()
-            selected_template = choice_by_title.get(str(selected_title), selected_title)
             if selected_template == CUSTOM_TEMPLATE_SENTINEL:
                 selected_template = questionary.text(
                     "Template URL",
                     default="file://.",
                     validate=lambda value: bool(value) or "Template URL is required",
+                    style=CPA_PROMPT_STYLE,
                 ).ask()
             template = selected_template
             if not template:
@@ -296,6 +309,7 @@ def scaffold(
                 get_catalog_data,
                 group_extension_choices,
             )
+            from create_awesome_python_app.prompt_style import CPA_PROMPT_STYLE
 
             interactive_catalog = interactive_catalog or get_catalog_data()
             extension_choices = build_extension_choices(interactive_catalog, template)
@@ -316,7 +330,8 @@ def scaffold(
                     "Which kinds of extensions do you need?",
                     choices=category_choices,
                     qmark="?",
-                    pointer=">",
+                    pointer="❯",
+                    style=CPA_PROMPT_STYLE,
                 ).ask()
                 selected_addons: list[str] = []
                 for category_slug in selected_categories or []:
@@ -330,7 +345,8 @@ def scaffold(
                             for choice in choices
                         ],
                         qmark="?",
-                        pointer=">",
+                        pointer="❯",
+                        style=CPA_PROMPT_STYLE,
                     ).ask()
                     selected_addons.extend(str(item) for item in picked or [])
                 addons = selected_addons

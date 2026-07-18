@@ -102,17 +102,17 @@ def test_build_template_choices_are_searchable() -> None:
     assert "FastAPI Starter" in first.title
     assert "OpenAPI" in first.title
     assert "uv" in first.title
-    assert "\033" not in first.title
     assert "openapi" in first.search
     assert "backend" in first.search
     assert "uv" in first.search
     assert choices[-1].value == CUSTOM_TEMPLATE_SENTINEL
 
 
-def test_template_choice_titles_are_html_safe_for_questionary() -> None:
-    """questionary.autocomplete formats choice text as HTML (match underline)."""
-    from prompt_toolkit.formatted_text import HTML
-
+def test_template_choice_titles_include_bright_category_ansi(
+    monkeypatch,
+) -> None:
+    """select() can render ANSI; badges use bright bold codes for contrast."""
+    monkeypatch.delenv("NO_COLOR", raising=False)
     catalog = {
         "categories": [
             {"slug": "backend-applications", "name": "Backend Applications"}
@@ -121,16 +121,34 @@ def test_template_choice_titles_are_html_safe_for_questionary() -> None:
             {
                 "slug": "fastapi-starter",
                 "name": "FastAPI Starter",
-                "description": "Async API with OpenAPI docs",
                 "url": "file:///templates/fastapi",
                 "category": "backend-applications",
-                "labels": ["FastAPI"],
             }
         ],
     }
     title = build_template_choices(catalog)[0].title
-    # Must not raise "not well-formed (invalid token)" from ANSI escapes.
-    HTML("{}<b><u>{}</u></b>{}").format(title[:3], title[3:6], title[6:])
+    assert "\033[" in title
+    assert "FastAPI Starter" in title
+
+
+def test_template_choice_titles_respect_no_color(monkeypatch) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    catalog = {
+        "categories": [
+            {"slug": "backend-applications", "name": "Backend Applications"}
+        ],
+        "templates": [
+            {
+                "slug": "fastapi-starter",
+                "name": "FastAPI Starter",
+                "url": "file:///templates/fastapi",
+                "category": "backend-applications",
+            }
+        ],
+    }
+    title = build_template_choices(catalog)[0].title
+    assert "\033" not in title
+    assert "FastAPI Starter" in title
 
 
 def test_build_extension_choices_filters_by_template_type() -> None:

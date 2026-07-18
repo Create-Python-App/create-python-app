@@ -16,6 +16,7 @@ from rich.console import Console
 from rich.table import Table
 
 from create_awesome_python_app import __version__
+from create_awesome_python_app.prompt_style import bold, color_category, dim
 
 console = Console(stderr=True)
 
@@ -238,14 +239,17 @@ def build_template_choices(data: dict[str, Any]) -> list[TemplateChoice]:
         labels = template.get("labels", [])
         label_suffix = ""
         if isinstance(labels, list) and labels:
-            label_suffix = " · " + ", ".join(str(label) for label in labels[:3])
+            label_suffix = dim(" · " + ", ".join(str(label) for label in labels[:3]))
         description = str(template.get("description", "")).strip()
-        description_suffix = f" — {description}" if description else ""
-        # Plain text only: questionary.autocomplete wraps choices in HTML for
-        # match highlighting, so ANSI / markup here raises XML parse errors.
+        # Keep slug + short description in the title so select(use_search_filter)
+        # can match them (filter scans Choice.title only).
+        description_suffix = dim(f" — {description}") if description else ""
+        name = str(template.get("name", slug))
+        # ANSI is OK here: questionary.select renders titles as terminal text.
+        # Do not pass these titles to autocomplete (HTML match highlighting).
         title = (
-            f"{badge}  "
-            f"{template.get('name', slug)} ({slug})"
+            f"{color_category(category_slug, badge)}  "
+            f"{bold(name)} ({slug})"
             f"{label_suffix}{description_suffix}"
         )
         choices.append(
@@ -258,7 +262,7 @@ def build_template_choices(data: dict[str, Any]) -> list[TemplateChoice]:
 
     choices.append(
         TemplateChoice(
-            title=" " * 12 + "Use my own template URL",
+            title=" " * 12 + dim("Use my own template URL"),
             value=CUSTOM_TEMPLATE_SENTINEL,
             search="custom own template url github file",
         )

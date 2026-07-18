@@ -80,16 +80,17 @@ Flags:
 
 ### Questionary prompt flows
 
-Interactive mode uses `questionary` with consistent markers: `qmark="?"`, `pointer=">"`.
+Interactive mode uses `questionary` with `CPA_PROMPT_STYLE` (high-contrast blue/green),
+`qmark="?"`, and `pointer="❯"`.
 
-#### 1. Template selection (autocomplete)
+#### 1. Template selection (select + search filter)
 
 When no `--template` is provided and interactive mode is on:
 
-- Prompt: `Pick a template (type to search)`
-- Control: `questionary.autocomplete` with `match_middle=True`
-- Choices: built from `build_template_choices()` in `catalog.py`
-- Each choice shows a category badge, template name, slug, optional labels, and description
+- Prompt: `Pick a template`
+- Control: `questionary.select` with `use_search_filter=True` (↑↓ browse, type to filter)
+- Choices: `Choice(title, value)` from `build_template_choices()` in `catalog.py`
+- Each choice shows a colored category badge, bold name, slug, optional labels, and description
 - Final choice: `Use my own template URL` -> `questionary.text` for a custom URL
 
 #### 2. Extension selection (checkbox, two-step)
@@ -110,17 +111,15 @@ From `cpa.config.json` or catalog `customOptions`:
 
 ### Category badges
 
-Interactive template choices use a plain fixed-width badge from
-`short_category_label()` (strips "Applications", "Application", "Boilerplate";
-abbreviates long names to initials). Titles stay plain text because
-`questionary.autocomplete` wraps choices in HTML for match highlighting — ANSI
-or other markup raises XML parse errors in prompt_toolkit.
+Interactive template choices use a fixed-width badge from `short_category_label()`
+with bright bold ANSI colors (`prompt_style.color_category`) so they stay readable
+on dark terminals. Titles may include ANSI because the picker is
+`questionary.select(..., use_search_filter=True)` — **not** autocomplete (which
+HTML-parses choice text and breaks on ANSI).
 
-`--list-templates` uses Rich tables for color, not ANSI in choice strings.
+Respects `NO_COLOR`. `--list-templates` uses Rich tables for color.
 
-Design implication: if terminal category color returns, prefer Rich styling or
-a prompt library that does not HTML-parse choice titles (CNA uses `prompts` +
-picocolors).
+UX: ↑↓ browse the full catalog, type to filter, Enter to pick (CNA-parity discovery).
 
 ### Rich semantic color usage
 
@@ -171,7 +170,7 @@ Completed in `create-python-app`:
 - Package README at `packages/create-awesome-python-app/README.md` with minimal hero SVG reference.
 - Placeholder hero SVG at `packages/create-awesome-python-app/assets/hero.svg` (dark background, teal text).
 - Working brand notes in `docs/BRAND.md` (tagline and story).
-- Full interactive CLI with CNA-parity flows (autocomplete templates, checkbox extensions, custom options).
+- Full interactive CLI with CNA-parity flows (select+filter templates, checkbox extensions, custom options).
 - Rich stderr output and semantic coloring across scaffold and cache commands.
 - Catalog integration with `cpa-templates` default URL and `CPA_CATALOG_URL` override.
 
@@ -191,7 +190,7 @@ The CLI experience is functional and CNA-aligned for catalog flows, but the broa
 Current CLI aesthetic:
 
 - Rich semantic colors (red/yellow/green/cyan/dim).
-- Plain fixed-width category badges in autocomplete titles (HTML-safe for questionary).
+- Bright category badges + high-contrast `CPA_PROMPT_STYLE` on select/checkbox prompts.
 - Minimal hero SVG (slate + teal).
 - No startup banner or branded prompt chrome beyond questionary defaults.
 
@@ -214,7 +213,7 @@ The user wants a complete review and improvement cycle for:
 - Visual consistency between GitHub, PyPI, docs, CLI, and templates.
 - Engagement and adoption.
 - A more cozy, attractive, polished, memorable brand.
-- CLI prompt flow polish (autocomplete, checkbox, error tone, banner).
+- CLI prompt flow polish (select+filter, checkbox, error tone, banner).
 
 The user explicitly wants the new chat to review everything, not only CLI internals or README tweaks.
 
@@ -289,7 +288,7 @@ Before implementation, produce a complete audit answering:
 - What is the current brand personality?
 - What should the brand personality become?
 - Does the CLI first run explain the product clearly in the first 5 seconds?
-- Do autocomplete and checkbox flows feel premium and discoverable?
+- Do select+filter and checkbox flows feel premium and discoverable?
 - Should website/docs category badges use semantic colors (CLI titles stay plain for questionary)?
 - Does the PyPI package README convert visitors into users?
 - Does the root GitHub README convert visitors into contributors?
@@ -363,7 +362,7 @@ Visual identity:
 - Define illustration/hero style.
 - Define voice and tone (match CLI error copy guidelines).
 - Define how "cozy" and "developer infrastructure" coexist.
-- Define category badge colors for website/docs cards (CLI autocomplete titles stay plain text).
+- Define category badge colors for website/docs cards (CLI already uses bright ANSI badges).
 
 ## Constraints And Standards
 
@@ -420,9 +419,9 @@ We need to do a full UI/UX and branding review of the Create Python App ecosyste
 
 Please start with discovery and audit before implementing. Review the root create-python-app repo, the package README, cpa-templates, and docs/BRAND.md. The goal is to improve engagement, attraction, branding, cozy developer experience, visual consistency, and conversion across GitHub, PyPI, docs, CLI, and generated starter UIs.
 
-The CLI already uses Rich on stderr and questionary autocomplete/checkbox flows
-with plain-text category badges (HTML-safe for prompt_toolkit). Evaluate whether
-those defaults should evolve into a cohesive brand system. Pay attention to error
+The CLI already uses Rich on stderr and questionary select/checkbox flows with
+`CPA_PROMPT_STYLE` plus bright ANSI category badges. Evaluate whether those
+defaults should evolve into a cohesive brand system. Pay attention to error
 message tone, interactive vs CI non-interactive behavior, and the minimal hero SVG.
 
 Previous work established basic READMEs and BRAND.md notes, but now I want a broader review and a stronger cohesive brand direction. Do not assume the current teal-on-slate hero or terminal colors are final.
