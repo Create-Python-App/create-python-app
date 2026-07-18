@@ -2,7 +2,7 @@
 
 ## 0.2.3 - 2026-07-18
 
-### Interactive CLI
+### Discovery UX
 
 - Template picker is now a browsable select with type-to-filter (↑↓ + search)
 - High-contrast CPA blue/green prompt theme and bright category badges
