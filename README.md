@@ -171,3 +171,11 @@ MIT — see [LICENSE](./LICENSE).
 - [uv workspaces handbook](https://pydevtools.com/handbook/how-to/how-to-set-up-a-python-monorepo-with-uv-workspaces/)
 - [cpa-templates](https://github.com/Create-Python-App/cpa-templates) — template and extension bank
 - Node parity: [Create-Node-App/create-node-app](https://github.com/Create-Node-App/create-node-app) + [cna-templates](https://github.com/Create-Node-App/cna-templates)
+
+## 👥 Contributors
+
+<a href="https://github.com/Create-Python-App/create-python-app/contributors">
+  <img src="https://contrib.rocks/image?repo=Create-Python-App/create-python-app"/>
+</a>
+
+Made with [contributors-img](https://contrib.rocks).
