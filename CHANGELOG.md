@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3 - 2026-07-18
+
+### Interactive CLI
+
+- Template picker is now a browsable select with type-to-filter (↑↓ + search)
+- High-contrast CPA blue/green prompt theme and bright category badges
+
 ## 0.2.2 - 2026-07-17
 
 ### Interactive CLI
