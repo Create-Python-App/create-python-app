@@ -3,6 +3,7 @@
 ## 0.2.6 - 2026-07-18
 
 ### Docs
+
 - Overhaul `create-awesome-python-app` README to Create-Node-App package parity (install channels, recipes, CLI/cache reference, site links).
 - Refresh monorepo README as contributor-facing docs with a clear pointer to the package README.
 
