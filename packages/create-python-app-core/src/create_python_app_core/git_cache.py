@@ -103,6 +103,50 @@ def _run_git(args: list[str], *, cwd: Path | None = None) -> str:
         raise CpaError("git executable not found", code="CPA_GIT") from exc
 
 
+def _remote_default_ref(entry: Path) -> str:
+    """Resolve origin/HEAD (e.g. origin/main) for an existing cache clone."""
+    try:
+        sym = _run_git(["symbolic-ref", "refs/remotes/origin/HEAD"], cwd=entry)
+        if sym.startswith("refs/remotes/"):
+            return sym.removeprefix("refs/remotes/")
+        if sym.startswith("origin/"):
+            return sym
+    except CpaError:
+        pass
+    for candidate in ("origin/main", "origin/master"):
+        try:
+            _run_git(["rev-parse", "--verify", candidate], cwd=entry)
+            return candidate
+        except CpaError:
+            continue
+    raise CpaError(
+        "unable to resolve remote default branch for cache refresh",
+        code="CPA_GIT",
+    )
+
+
+def _refresh_cached_repo(entry: Path, ref: str | None) -> str:
+    """Fetch and hard-reset the cache clone to the remote tip (CNA pull parity)."""
+    _run_git(["fetch", "--all", "--tags"], cwd=entry)
+    if ref:
+        remote = ref if ref.startswith(("refs/", "origin/")) else f"origin/{ref}"
+        local_branch = ref.rsplit("/", 1)[-1]
+        _run_git(["checkout", "--force", "-B", local_branch, remote], cwd=entry)
+        _run_git(["reset", "--hard", remote], cwd=entry)
+    else:
+        remote = _remote_default_ref(entry)
+        local_branch = remote.rsplit("/", 1)[-1]
+        _run_git(["checkout", "--force", "-B", local_branch, remote], cwd=entry)
+        _run_git(["reset", "--hard", remote], cwd=entry)
+    return _run_git(["rev-parse", "HEAD"], cwd=entry)
+
+
+def _subdir_missing(entry: Path, source: ResolvedSource) -> bool:
+    if not source.subdir:
+        return False
+    return not (entry / source.subdir).is_dir()
+
+
 def download_repository(
     source: ResolvedSource,
     *,
@@ -128,14 +172,14 @@ def download_repository(
             )
         return entry
 
-    if entry.exists() and not _should_refresh(meta, mode):
+    needs_refresh = _should_refresh(meta, mode) or (
+        entry.exists() and _subdir_missing(entry, source)
+    )
+    if entry.exists() and not needs_refresh:
         return entry
 
     if entry.exists() and (entry / ".git").is_dir() and mode != "manual":
-        _run_git(["fetch", "--all", "--tags"], cwd=entry)
-        if source.ref:
-            _run_git(["checkout", source.ref], cwd=entry)
-        commit = _run_git(["rev-parse", "HEAD"], cwd=entry)
+        commit = _refresh_cached_repo(entry, source.ref)
     else:
         if entry.exists():
             shutil.rmtree(entry)
