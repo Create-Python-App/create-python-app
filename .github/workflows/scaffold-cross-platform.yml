@@ -18,7 +18,7 @@ env:
   # Full registry URLs: published PyPI 0.1.0 does not resolve catalog slugs.
   # After create-awesome-python-app>=0.2.0 ships resolve_catalog_spec, slugs also work.
   CPA_TEMPLATE_FASTAPI: https://github.com/Create-Python-App/cpa-templates?subdir=templates/fastapi-starter
-  CPA_ADDON_DOCKER: https://github.com/Create-Python-App/cpa-templates?subdir=extensions/python-docker
+  CPA_ADDON_DOCKER: https://github.com/Create-Python-App/cpa-templates?subdir=extensions/fastapi-docker
 
 jobs:
   scaffold:
@@ -72,7 +72,7 @@ jobs:
           PY
 
   addon-smoke:
-    name: ubuntu-latest / fastapi-starter + python-docker
+    name: ubuntu-latest / fastapi-starter + fastapi-docker
     runs-on: ubuntu-latest
     steps:
       - uses: astral-sh/setup-uv@v7

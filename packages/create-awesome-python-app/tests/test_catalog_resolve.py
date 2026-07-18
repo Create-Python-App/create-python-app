@@ -32,7 +32,7 @@ SAMPLE_CATALOG = {
     "extensions": [
         {
             "slug": "github-setup",
-            "url": "https://github.com/Create-Python-App/cpa-templates?subdir=extensions/github-setup",
+            "url": "https://github.com/Create-Python-App/cpa-templates?subdir=extensions/all-github-setup",
         }
     ],
 }
@@ -258,10 +258,10 @@ def test_validate_extension_compatibility_ok() -> None:
                 "url": "file:///ext/github",
                 "incompatibleWith": ["other"],
             },
-            {"slug": "python-docker", "url": "file:///ext/docker"},
+            {"slug": "fastapi-docker", "url": "file:///ext/docker"},
         ]
     }
-    validate_extension_compatibility(["github-setup", "python-docker"], catalog=catalog)
+    validate_extension_compatibility(["github-setup", "fastapi-docker"], catalog=catalog)
 
 
 def test_validate_extension_compatibility_fails_on_pair() -> None:

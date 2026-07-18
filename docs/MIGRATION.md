@@ -104,7 +104,7 @@ slugs fail with a hint to pass a full URL.
 
 ```text
 https://github.com/Create-Python-App/cpa-templates?subdir=templates/fastapi-starter
-https://github.com/Create-Python-App/cpa-templates?subdir=extensions/github-setup
+https://github.com/Create-Python-App/cpa-templates?subdir=extensions/all-github-setup
 ```
 
 **Local `file://` URLs.** For forks, air-gapped work, or integration tests:
