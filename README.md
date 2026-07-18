@@ -1,4 +1,12 @@
-# create-python-app
+<!--lint disable double-link awesome-heading awesome-git-repo-age awesome-toc-->
+
+<div align="center">
+
+# Create Awesome Python App
+
+**The open-source monorepo behind `create-awesome-python-app`: compose templates and addons into production-ready Python, FastAPI, Django, Celery, CLI, and uv workspace projects.**
+
+One command. Any stack.
 
 [![CI Tests](https://github.com/Create-Python-App/create-python-app/actions/workflows/test.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/test.yml)
 [![Lint](https://github.com/Create-Python-App/create-python-app/actions/workflows/lint.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/lint.yml)
@@ -9,9 +17,39 @@
 [![Homebrew](https://img.shields.io/badge/homebrew-Create--Python--App%2Ftap-orange?logo=homebrew)](https://github.com/Create-Python-App/homebrew-tap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-Composable scaffolding CLI for production-ready Python apps.
+[Package README](./packages/create-awesome-python-app/README.md) · [Official Site](https://create-awesome-python-app.vercel.app) · [Templates](https://create-awesome-python-app.vercel.app/templates) · [Extensions](https://create-awesome-python-app.vercel.app/extensions) · [Contributing](./CONTRIBUTING.md) · [Troubleshooting](./docs/TROUBLESHOOTING.md)
 
-> **Status:** CLI monorepo bootstrapped. Template bank: [`cpa-templates`](https://github.com/Create-Python-App/cpa-templates). Roadmap: [#1](https://github.com/Create-Python-App/create-python-app/issues/1).
+</div>
+
+---
+
+## What This Repo Contains
+
+This repository contains the source code for [`create-awesome-python-app`](https://pypi.org/project/create-awesome-python-app/), the CLI that composes curated templates, addons, custom options, and AI-ready conventions into working projects.
+
+Use this README if you want to understand the codebase, run it locally, contribute a fix, improve documentation, or work on the CLI packages. If you only want to generate an app, start with the [package README](./packages/create-awesome-python-app/README.md).
+
+---
+
+## Quick Start For Users
+
+```bash
+uvx create-awesome-python-app@latest my-app
+```
+
+Run headlessly for scripts, CI, or platform automation:
+
+```bash
+uvx create-awesome-python-app my-api \
+  --template fastapi-starter \
+  --addons github-setup \
+  --addons fastapi-sqlalchemy \
+  --no-interactive
+```
+
+More examples live in the [CLI package README](./packages/create-awesome-python-app/README.md).
+
+---
 
 ## Ecosystem
 
@@ -19,6 +57,7 @@ Composable scaffolding CLI for production-ready Python apps.
 |------------|------|
 | [create-python-app](https://github.com/Create-Python-App/create-python-app) (this repo) | CLI (`create-awesome-python-app`) and scaffolding engine (`create-python-app-core`) |
 | [cpa-templates](https://github.com/Create-Python-App/cpa-templates) | Official templates and extensions (`templates.json` catalog) |
+| [website](https://github.com/Create-Python-App/website) | Docs + catalog UI ([create-awesome-python-app.vercel.app](https://create-awesome-python-app.vercel.app)) |
 | [homebrew-tap](https://github.com/Create-Python-App/homebrew-tap) | Homebrew formula |
 | [aur-package](https://github.com/Create-Python-App/aur-package) | AUR PKGBUILD mirror |
 
@@ -28,7 +67,71 @@ The CLI fetches the catalog from:
 
 Override with `CPA_CATALOG_URL` for forks or local testing (`file://` supported).
 
-## Install
+---
+
+## Repository Map
+
+This is a **virtual uv workspace**: the root is not published; packages live under `packages/*` and share one `uv.lock` / `.venv`.
+
+| Path | Purpose |
+|------|---------|
+| [`packages/create-awesome-python-app`](./packages/create-awesome-python-app) | Main CLI package (Typer), interactive wizard, catalog listing |
+| [`packages/create-python-app-core`](./packages/create-python-app-core) | Scaffolding engine: resolve sources, merge layers, install, git init |
+| [`docs/`](./docs) | Brand, troubleshooting, migration, distribution, versioning |
+| [`.github/workflows`](./.github/workflows) | CI, release, Docker / Homebrew / AUR publish, distribution smoke |
+
+Template and extension data is maintained in [`Create-Python-App/cpa-templates`](https://github.com/Create-Python-App/cpa-templates). This repo consumes that catalog remotely.
+
+```text
+create-python-app/          # virtual workspace root (no [project] table)
+├── pyproject.toml          # [tool.uv.workspace] members = ["packages/*"]
+├── uv.lock
+├── .venv/
+└── packages/
+    ├── create-python-app-core/       # scaffolding engine
+    └── create-awesome-python-app/    # CLI (depends on core via workspace)
+```
+
+---
+
+## Local Development
+
+Requires **Python 3.12+** (pinned in `.python-version`) and [uv](https://docs.astral.sh/uv/):
+
+```bash
+git clone https://github.com/Create-Python-App/create-python-app.git
+cd create-python-app
+uv sync --group dev
+uv run create-awesome-python-app --help
+```
+
+Non-interactive local smoke test:
+
+```bash
+uv run create-awesome-python-app smoke-app \
+  --template fastapi-starter \
+  --addons github-setup \
+  --no-interactive \
+  --no-install
+```
+
+Install git hooks: `uv run pre-commit install`
+
+---
+
+## Development Commands
+
+| Task | Make | Equivalent |
+|------|------|------------|
+| Install workspace | `make sync` | `uv sync --group dev` |
+| Tests | `make test` | `uv run pytest` |
+| Lint | `make lint` | `uv run ruff check .` |
+| Type-check | `make typecheck` | `uv run pyright` |
+| Build packages | `make build` | `uv build --all` |
+
+---
+
+## Install Channels (published package)
 
 ```bash
 # PyPI / uv
@@ -43,98 +146,28 @@ yay -S create-awesome-python-app
 
 # Docker
 docker run --rm -it -v "${PWD}:/app" -w /app \
-  ulisesjeremias/create-awesome-python-app my-app
+  ulisesjeremias/create-awesome-python-app:latest my-app \
+  --template fastapi-starter
 ```
 
-Or pin a version:
+Published image: [`ulisesjeremias/create-awesome-python-app`](https://hub.docker.com/r/ulisesjeremias/create-awesome-python-app)
+
+Local image build (installs the given PyPI version into the image):
 
 ```bash
-uvx create-awesome-python-app@0.1.0 my-app --template fastapi-starter --no-interactive
+docker build --build-arg VERSION=0.2.5 -t create-awesome-python-app .
+docker run --rm create-awesome-python-app --help
 ```
 
-From this workspace (development):
-
-```bash
-uv sync
-uv run create-awesome-python-app --help
-```
-
-### Shell completion
-
-```bash
-create-awesome-python-app --install-completion   # bash / zsh / fish
-create-awesome-python-app --show-completion      # print script only
-```
+---
 
 ## License
 
 MIT — see [LICENSE](./LICENSE).
 
-## Monorepo layout (uv workspaces)
-
-This repository is a **virtual uv workspace**: the root is not published; packages live under `packages/*` and share one `uv.lock` / `.venv`.
-
-```text
-create-python-app/          # virtual workspace root (no [project] table)
-├── pyproject.toml          # [tool.uv.workspace] members = ["packages/*"]
-├── uv.lock
-├── .venv/
-└── packages/
-    ├── create-python-app-core/       # scaffolding engine
-    └── create-awesome-python-app/    # CLI (depends on core via workspace)
-```
-
-### Setup
-
-```bash
-# Requires uv: https://docs.astral.sh/uv/
-uv sync --group dev
-```
-
-## Development commands
-
-From the repo root (requires [uv](https://docs.astral.sh/uv/)):
-
-| Task | Make | Equivalent |
-|------|------|------------|
-| Install workspace | `make sync` | `uv sync --group dev` |
-| Tests | `make test` | `uv run pytest` |
-| Lint | `make lint` | `uv run ruff check .` |
-| Type-check | `make typecheck` | `uv run pyright` |
-| Build packages | `make build` | `uv build --all` |
-
-Install git hooks: `uv run pre-commit install`
-
-## Python version
-
-- **Pin file:** `.python-version` → `3.12`
-- **Constraint:** every workspace member sets `requires-python = ">=3.12"`
-- **CI:** workflows install Python 3.12+ matching this pin
-
-```bash
-uv python install
-uv sync --group dev
-```
-
-## Docker
-
-Published image: [`ulisesjeremias/create-awesome-python-app`](https://hub.docker.com/r/ulisesjeremias/create-awesome-python-app)
-
-```bash
-docker run --rm ulisesjeremias/create-awesome-python-app:0.1.0 --version
-docker run --rm -it -v "${PWD}:/app" -w /app \
-  ulisesjeremias/create-awesome-python-app my-app --template fastapi-starter --no-interactive
-```
-
-Local build (installs the given PyPI version into the image):
-
-```bash
-docker build --build-arg VERSION=0.1.0 -t create-awesome-python-app .
-docker run --rm create-awesome-python-app --help
-```
-
 ### Reference
 
+- [Package README](./packages/create-awesome-python-app/README.md) — user-facing CLI docs
 - [uv workspaces handbook](https://pydevtools.com/handbook/how-to/how-to-set-up-a-python-monorepo-with-uv-workspaces/)
 - [cpa-templates](https://github.com/Create-Python-App/cpa-templates) — template and extension bank
 - Node parity: [Create-Node-App/create-node-app](https://github.com/Create-Node-App/create-node-app) + [cna-templates](https://github.com/Create-Node-App/cna-templates)
