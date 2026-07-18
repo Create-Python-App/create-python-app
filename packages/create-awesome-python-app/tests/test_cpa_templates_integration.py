@@ -14,7 +14,7 @@ CPA_TEMPLATES_ROOT = Path(
     os.environ.get("CPA_TEMPLATES_ROOT", str(_DEFAULT_CPA_TEMPLATES))
 ).resolve()
 FASTAPI_TEMPLATE = CPA_TEMPLATES_ROOT / "templates" / "fastapi-starter"
-GITHUB_SETUP = CPA_TEMPLATES_ROOT / "extensions" / "github-setup"
+GITHUB_SETUP = CPA_TEMPLATES_ROOT / "extensions" / "all-github-setup"
 
 
 def _cpa_templates_available() -> bool:
