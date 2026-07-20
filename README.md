@@ -175,7 +175,7 @@ MIT — see [LICENSE](./LICENSE).
 ## 👥 Contributors
 
 <a href="https://github.com/Create-Python-App/create-python-app/contributors">
-  <img src="https://contrib.rocks/image?repo=Create-Python-App/create-python-app"/>
+  <img src="https://contrib.rocks/image?repo=Create-Python-App/create-python-app" alt="Contributors"/>
 </a>
 
 Made with [contributors-img](https://contrib.rocks).
