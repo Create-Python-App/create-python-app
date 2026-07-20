@@ -74,6 +74,7 @@ jobs:
             -e CI=true \
             -v /tmp/cpa-docker-smoke:/out \
             -w /out \
+            --user root \
             "$DOCKER_IMAGE:latest" \
             --template fastapi-starter \
             --addons github-setup \
