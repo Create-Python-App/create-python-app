@@ -76,10 +76,15 @@ def _expand_variadic_option(argv: list[str], option: str) -> list[str]:
 
     Typer's ``list[str]`` Option only accepts one value per flag. Commander uses
     ``--addons [extensions...]``, so users naturally write space-separated lists.
+
+    When ``project_directory`` comes *after* options and no positional was seen
+    yet, peel the final trailing token at EOS back as the directory so that
+    ``--addons a --addons b /tmp/app`` does not treat ``/tmp/app`` as an addon.
     """
     out: list[str] = []
     i = 0
     prefix = option + "="
+    saw_positional = False
     while i < len(argv):
         arg = argv[i]
         if arg == option:
@@ -88,17 +93,26 @@ def _expand_variadic_option(argv: list[str], option: str) -> list[str]:
             while i < len(argv) and not argv[i].startswith("-"):
                 values.append(argv[i])
                 i += 1
+            ended_at_eos = i >= len(argv)
+            trailing: str | None = None
+            if ended_at_eos and not saw_positional and len(values) >= 2:
+                trailing = values.pop()
             if not values:
                 out.append(option)
             else:
                 for value in values:
                     out.extend([option, value])
+            if trailing is not None:
+                out.append(trailing)
+                saw_positional = True
             continue
         if arg.startswith(prefix):
             value = arg[len(prefix) :]
             out.extend([option, value] if value else [option])
             i += 1
             continue
+        if i > 0 and not arg.startswith("-"):
+            saw_positional = True
         out.append(arg)
         i += 1
     return out
@@ -106,7 +120,9 @@ def _expand_variadic_option(argv: list[str], option: str) -> list[str]:
 
 def _preprocess_cli_argv(argv: list[str] | None = None) -> list[str]:
     """Apply argv rewrites needed before Typer parses the CLI."""
-    out = _preprocess_fixture_argv(argv)
+    raw = list(sys.argv if argv is None else argv)
+    # Pass an explicit list so fixture preprocess does not mutate sys.argv early.
+    out = _preprocess_fixture_argv(raw)
     out = _expand_variadic_option(out, "--addons")
     out = _expand_variadic_option(out, "--extend")
     if argv is None:

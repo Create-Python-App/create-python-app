@@ -1,6 +1,6 @@
 [project]
 name = "create-awesome-python-app"
-version = "0.2.8"
+version = "0.2.9"
 description = "Composable scaffolding CLI for production-ready Python apps"
 readme = "README.md"
 requires-python = ">=3.12"
