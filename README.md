@@ -16,6 +16,7 @@ One command. Any stack.
 [![AUR](https://img.shields.io/aur/version/create-awesome-python-app?label=AUR&logo=archlinux)](https://aur.archlinux.org/packages/create-awesome-python-app)
 [![Homebrew](https://img.shields.io/badge/homebrew-Create--Python--App%2Ftap-orange?logo=homebrew)](https://github.com/Create-Python-App/homebrew-tap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Discord](https://img.shields.io/discord/1527933660764831825?label=Discord&logo=discord&logoColor=white)](https://discord.gg/dwFTsR7fK2)
 
 [Package README](./packages/create-awesome-python-app/README.md) · [Official Site](https://create-awesome-python-app.vercel.app) · [Templates](https://create-awesome-python-app.vercel.app/templates) · [Extensions](https://create-awesome-python-app.vercel.app/extensions) · [Contributing](./CONTRIBUTING.md) · [Troubleshooting](./docs/TROUBLESHOOTING.md)
 
