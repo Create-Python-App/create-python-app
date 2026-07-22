@@ -7,26 +7,6 @@ from create_awesome_python_app.cli import app
 from typer.testing import CliRunner
 
 runner = CliRunner()
-_CPA_ENV_VARS = (
-    "CPA_REFRESH",
-    "CPA_NO_CATALOG_CACHE",
-    "CPA_CACHE_DIR",
-    "CPA_CATALOG_FIXTURE",
-    "CPA_FIXTURE_DIR",
-)
-
-
-@pytest.fixture(autouse=True)
-def _clean_cpa_env(monkeypatch):
-    from create_awesome_python_app.catalog import reset_catalog_cache_for_tests
-
-    for name in _CPA_ENV_VARS:
-        monkeypatch.delenv(name, raising=False)
-    reset_catalog_cache_for_tests()
-    yield
-    for name in _CPA_ENV_VARS:
-        monkeypatch.delenv(name, raising=False)
-    reset_catalog_cache_for_tests()
 
 
 def test_version() -> None:
