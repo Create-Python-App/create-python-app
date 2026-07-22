@@ -21,6 +21,19 @@ def _cpa_templates_available() -> bool:
     return (FASTAPI_TEMPLATE / "pyproject.toml").is_file()
 
 
+def _clean_fixture_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure subprocess scaffolds are not forced into fixture mode."""
+    monkeypatch.delenv("CPA_CATALOG_FIXTURE", raising=False)
+    monkeypatch.delenv("CPA_FIXTURE_DIR", raising=False)
+
+
+def _subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env.pop("CPA_CATALOG_FIXTURE", None)
+    env.pop("CPA_FIXTURE_DIR", None)
+    return env
+
+
 @pytest.mark.skipif(
     not _cpa_templates_available(),
     reason="cpa-templates checkout not available (set CPA_TEMPLATES_ROOT)",
@@ -28,6 +41,7 @@ def _cpa_templates_available() -> bool:
 def test_scaffold_fastapi_starter_from_cpa_templates(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    _clean_fixture_env(monkeypatch)
     monkeypatch.setenv("CI", "1")
     monkeypatch.setenv("CPA_SKIP_GIT", "1")
     monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
@@ -48,6 +62,7 @@ def test_scaffold_fastapi_starter_from_cpa_templates(
         cwd=_REPO_ROOT,
         capture_output=True,
         text=True,
+        env=_subprocess_env(),
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -78,6 +93,7 @@ def test_scaffold_fastapi_starter_via_catalog_slug(
     """Scaffold using --template fastapi-starter slug (issue #160 / #161)."""
     import json
 
+    _clean_fixture_env(monkeypatch)
     monkeypatch.setenv("CI", "1")
     monkeypatch.setenv("CPA_SKIP_GIT", "1")
     monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
@@ -114,6 +130,7 @@ def test_scaffold_fastapi_starter_via_catalog_slug(
         cwd=_REPO_ROOT,
         capture_output=True,
         text=True,
+        env=_subprocess_env(),
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -129,6 +146,7 @@ def test_scaffold_via_catalog_addon_slug(
 ) -> None:
     import json
 
+    _clean_fixture_env(monkeypatch)
     monkeypatch.setenv("CI", "1")
     monkeypatch.setenv("CPA_SKIP_GIT", "1")
     monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
@@ -170,6 +188,7 @@ def test_scaffold_via_catalog_addon_slug(
         cwd=_REPO_ROOT,
         capture_output=True,
         text=True,
+        env=_subprocess_env(),
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -183,6 +202,7 @@ def test_scaffold_via_catalog_addon_slug(
 def test_scaffold_fastapi_with_github_setup_extension(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    _clean_fixture_env(monkeypatch)
     monkeypatch.setenv("CI", "1")
     monkeypatch.setenv("CPA_SKIP_GIT", "1")
     monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cpa-cache"))
@@ -204,6 +224,7 @@ def test_scaffold_fastapi_with_github_setup_extension(
         cwd=_REPO_ROOT,
         capture_output=True,
         text=True,
+        env=_subprocess_env(),
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr

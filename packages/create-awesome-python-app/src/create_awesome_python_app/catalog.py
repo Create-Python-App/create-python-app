@@ -344,9 +344,9 @@ CACHE_TTL_SECONDS = 3600
 FETCH_TIMEOUT_SECONDS = 10
 USER_AGENT = f"create-awesome-python-app/{__version__} (https://github.com/Create-Python-App/create-python-app)"
 
-_FIXTURE = (
-    Path(__file__).resolve().parents[4] / "fixtures" / "catalog" / "templates.json"
-)
+_AUTO_FIXTURE_DIR = Path(__file__).resolve().parents[4]
+_SENTINEL = object()
+_fixture_root_override: Path | None | object = _SENTINEL
 
 _memory_cache: dict[str, Any] | None = None
 _memory_ts: float = 0.0
@@ -360,13 +360,61 @@ def catalog_cache_path() -> Path:
     return default_cache_dir() / "catalog" / "templates.json"
 
 
+def resolve_fixture_root() -> Path | None:
+    """Resolve the repo root that contains ``fixtures/catalog/templates.json``.
+
+    Priority: ``CPA_FIXTURE_DIR`` → walk-up from package → ``cwd``.
+    """
+    if _fixture_root_override is not _SENTINEL:
+        return _fixture_root_override  # type: ignore[return-value]
+
+    env = os.environ.get("CPA_FIXTURE_DIR", "").strip()
+    if env:
+        return Path(env).expanduser().resolve()
+
+    def _has_fixture_catalog(root: Path) -> bool:
+        return (root / "fixtures" / "catalog" / "templates.json").is_file()
+
+    if _has_fixture_catalog(_AUTO_FIXTURE_DIR):
+        return _AUTO_FIXTURE_DIR
+
+    # Editable / site-packages layouts vary; walk up from this file.
+    for parent in Path(__file__).resolve().parents:
+        if _has_fixture_catalog(parent):
+            return parent
+
+    cwd = Path.cwd()
+    if _has_fixture_catalog(cwd):
+        return cwd
+    return None
+
+
+def set_fixture_root_for_tests(root: Path | None) -> None:
+    """Override fixture root (test helper)."""
+    global _fixture_root_override
+    _fixture_root_override = root
+
+
+def reset_fixture_root_for_tests() -> None:
+    global _fixture_root_override
+    _fixture_root_override = _SENTINEL
+
+
+def fixture_catalog_path() -> Path | None:
+    root = resolve_fixture_root()
+    if root is None:
+        return None
+    return root / "fixtures" / "catalog" / "templates.json"
+
+
 def _read_json_file(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _read_fixture() -> dict[str, Any]:
-    if _FIXTURE.is_file():
-        return _read_json_file(_FIXTURE)
+    path = fixture_catalog_path()
+    if path is not None and path.is_file():
+        return _read_json_file(path)
     return {"templates": [], "extensions": [], "categories": []}
 
 
@@ -417,6 +465,19 @@ def get_catalog_data(*, force_refresh: bool = False) -> dict[str, Any]:
     """Load templates.json from remote URL, disk cache, or local fixture."""
     global _memory_cache, _memory_ts
 
+    if os.environ.get("CPA_CATALOG_FIXTURE") == "1":
+        path = fixture_catalog_path()
+        if path is None or not path.is_file():
+            raise RuntimeError(
+                "Fixture mode is enabled (CPA_CATALOG_FIXTURE=1) but the fixture "
+                "root could not be resolved. Set CPA_FIXTURE_DIR to the repo root "
+                "containing fixtures/catalog/templates.json."
+            )
+        data = _read_fixture()
+        _memory_cache = data
+        _memory_ts = time.time()
+        return data
+
     if (
         not force_refresh
         and _memory_cache is not None
@@ -425,38 +486,33 @@ def get_catalog_data(*, force_refresh: bool = False) -> dict[str, Any]:
     ):
         return _memory_cache
 
-    if os.environ.get("CPA_CATALOG_FIXTURE") == "1":
-        data = _read_fixture()
-    else:
-        url = catalog_url()
-        try:
-            data = _fetch_remote(url)
-            _write_disk_cache(data)
-        except (
-            urllib.error.URLError,
-            TimeoutError,
-            OSError,
-            json.JSONDecodeError,
-        ) as err:
-            disk = _read_disk_cache()
-            if disk is not None:
+    url = catalog_url()
+    try:
+        data = _fetch_remote(url)
+        _write_disk_cache(data)
+    except (
+        urllib.error.URLError,
+        TimeoutError,
+        OSError,
+        json.JSONDecodeError,
+    ) as err:
+        disk = _read_disk_cache()
+        if disk is not None:
+            console.print(
+                "[yellow][cpa] Could not refresh catalog "
+                f"({err}); using disk cache.[/yellow]"
+            )
+            data = disk
+        else:
+            fixture = _read_fixture()
+            if fixture.get("templates"):
                 console.print(
                     "[yellow][cpa] Could not refresh catalog "
-                    f"({err}); using disk cache.[/yellow]"
+                    f"({err}); using fixture.[/yellow]"
                 )
-                data = disk
+                data = fixture
             else:
-                fixture = _read_fixture()
-                if fixture.get("templates"):
-                    console.print(
-                        "[yellow][cpa] Could not refresh catalog "
-                        f"({err}); using fixture.[/yellow]"
-                    )
-                    data = fixture
-                else:
-                    raise RuntimeError(
-                        f"Failed to load template catalog: {err}"
-                    ) from err
+                raise RuntimeError(f"Failed to load template catalog: {err}") from err
 
     _memory_cache = data
     _memory_ts = time.time()
