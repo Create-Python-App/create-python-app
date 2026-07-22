@@ -271,6 +271,108 @@ def test_options_after_project_directory(tmp_path: Path, monkeypatch) -> None:
     assert options["template"] == f"file://{tpl}"
 
 
+def test_expand_variadic_addons_and_extend() -> None:
+    from create_awesome_python_app.cli import (
+        _expand_variadic_option,
+        _preprocess_cli_argv,
+    )
+
+    assert _expand_variadic_option(
+        ["cpa", "my-api", "--addons", "fastapi-docker", "github-setup", "--no-install"],
+        "--addons",
+    ) == [
+        "cpa",
+        "my-api",
+        "--addons",
+        "fastapi-docker",
+        "--addons",
+        "github-setup",
+        "--no-install",
+    ]
+    assert _preprocess_cli_argv(
+        [
+            "cpa",
+            "my-api",
+            "--template",
+            "fastapi-starter",
+            "--addons",
+            "fastapi-docker",
+            "github-setup",
+            "--extend",
+            "a",
+            "b",
+            "--no-interactive",
+        ]
+    ) == [
+        "cpa",
+        "my-api",
+        "--template",
+        "fastapi-starter",
+        "--addons",
+        "fastapi-docker",
+        "--addons",
+        "github-setup",
+        "--extend",
+        "a",
+        "--extend",
+        "b",
+        "--no-interactive",
+    ]
+
+
+def test_space_separated_addons_after_project_directory(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """CNA parity: ``--addons fastapi-docker github-setup`` (one flag, many values)."""
+    from create_awesome_python_app.cli import _preprocess_cli_argv
+
+    tpl = tmp_path / "tpl"
+    tpl.mkdir()
+    captured: dict[str, object] = {}
+
+    async def fake_check_for_latest_version(_package_name):
+        return None
+
+    async def fake_create_python_app(project_directory, options, *_args, **_kwargs):
+        captured["project_directory"] = project_directory
+        captured["options"] = options
+
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.check_for_latest_version",
+        fake_check_for_latest_version,
+    )
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.create_python_app",
+        fake_create_python_app,
+    )
+
+    argv = _preprocess_cli_argv(
+        [
+            "cpa",
+            "my-api",
+            "--template",
+            f"file://{tpl}",
+            "--addons",
+            "fastapi-docker",
+            "github-setup",
+            "--no-install",
+            "--no-interactive",
+        ]
+    )
+    result = runner.invoke(app, argv[1:])
+
+    text = (result.stdout or "") + (result.stderr or "")
+    assert result.exit_code == 0, text
+    assert "unexpected extra argument" not in text.lower()
+    options = captured["options"]
+    assert isinstance(options, dict)
+    addons = options["addons"]
+    assert isinstance(addons, list)
+    assert len(addons) == 2
+    assert any("fastapi-docker" in a for a in addons)
+    assert any("github-setup" in a for a in addons)
+
+
 def test_preprocess_fixture_argv_bare_and_with_dir() -> None:
     from create_awesome_python_app.cli import _FIXTURE_AUTO, _preprocess_fixture_argv
 
