@@ -342,21 +342,24 @@ def test_expand_preserves_trailing_project_directory() -> None:
         "/tmp/app",
     ]
     # CI-shaped argv: flags between last addon and directory.
-    assert _preprocess_cli_argv(
-        [
-            "cpa",
-            "--template",
-            "fastapi-starter",
-            "--addons",
-            "fastapi-docker",
-            "--addons",
-            "github-setup",
-            "--no-interactive",
-            "--no-install",
-            "--force",
-            "/tmp/app",
-        ]
-    )[-1] == "/tmp/app"
+    assert (
+        _preprocess_cli_argv(
+            [
+                "cpa",
+                "--template",
+                "fastapi-starter",
+                "--addons",
+                "fastapi-docker",
+                "--addons",
+                "github-setup",
+                "--no-interactive",
+                "--no-install",
+                "--force",
+                "/tmp/app",
+            ]
+        )[-1]
+        == "/tmp/app"
+    )
     # Space-separated addons with directory last (no prior positional).
     assert _preprocess_cli_argv(
         ["cpa", "--addons", "fastapi-docker", "github-setup", "/tmp/app"]
@@ -368,6 +371,7 @@ def test_expand_preserves_trailing_project_directory() -> None:
         "github-setup",
         "/tmp/app",
     ]
+
 
 def test_space_separated_addons_after_project_directory(
     tmp_path: Path, monkeypatch
