@@ -2,7 +2,7 @@
 
 ## 0.2.7 - 2026-07-22
 
-### Fixes
+### CLI
 
 - Allow options after the project directory (`uvx create-awesome-python-app my-api --template …`). Typer was registering `cache` as a nested command group, so Click treated `--template` as a COMMAND name.
 
