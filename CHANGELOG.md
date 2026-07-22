@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.9 - 2026-07-22
+
+### CLI / argv trailing directory
+
+- Stop treating a trailing `project_directory` after `--addons` / `--extend` as another addon value (e.g. `--addons a --addons b /tmp/app`).
+
 ## 0.2.8 - 2026-07-22
 
 ### CLI / argv

@@ -320,6 +320,55 @@ def test_expand_variadic_addons_and_extend() -> None:
     ]
 
 
+def test_expand_preserves_trailing_project_directory() -> None:
+    """Repeated ``--addons`` with directory last must not swallow the path."""
+    from create_awesome_python_app.cli import _preprocess_cli_argv
+
+    assert _preprocess_cli_argv(
+        [
+            "cpa",
+            "--addons",
+            "github-setup",
+            "--addons",
+            "fastapi-docker",
+            "/tmp/app",
+        ]
+    ) == [
+        "cpa",
+        "--addons",
+        "github-setup",
+        "--addons",
+        "fastapi-docker",
+        "/tmp/app",
+    ]
+    # CI-shaped argv: flags between last addon and directory.
+    assert _preprocess_cli_argv(
+        [
+            "cpa",
+            "--template",
+            "fastapi-starter",
+            "--addons",
+            "fastapi-docker",
+            "--addons",
+            "github-setup",
+            "--no-interactive",
+            "--no-install",
+            "--force",
+            "/tmp/app",
+        ]
+    )[-1] == "/tmp/app"
+    # Space-separated addons with directory last (no prior positional).
+    assert _preprocess_cli_argv(
+        ["cpa", "--addons", "fastapi-docker", "github-setup", "/tmp/app"]
+    ) == [
+        "cpa",
+        "--addons",
+        "fastapi-docker",
+        "--addons",
+        "github-setup",
+        "/tmp/app",
+    ]
+
 def test_space_separated_addons_after_project_directory(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -371,6 +420,57 @@ def test_space_separated_addons_after_project_directory(
     assert len(addons) == 2
     assert any("fastapi-docker" in a for a in addons)
     assert any("github-setup" in a for a in addons)
+
+
+def test_repeated_addons_with_directory_last(tmp_path: Path, monkeypatch) -> None:
+    """``--addons a --addons b <dir>`` must keep ``<dir>`` as project_directory."""
+    from create_awesome_python_app.cli import _preprocess_cli_argv
+
+    tpl = tmp_path / "tpl"
+    tpl.mkdir()
+    target = tmp_path / "app"
+    captured: dict[str, object] = {}
+
+    async def fake_check_for_latest_version(_package_name):
+        return None
+
+    async def fake_create_python_app(project_directory, options, *_args, **_kwargs):
+        captured["project_directory"] = project_directory
+        captured["options"] = options
+
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.check_for_latest_version",
+        fake_check_for_latest_version,
+    )
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.create_python_app",
+        fake_create_python_app,
+    )
+
+    argv = _preprocess_cli_argv(
+        [
+            "cpa",
+            "--template",
+            f"file://{tpl}",
+            "--addons",
+            "fastapi-docker",
+            "--addons",
+            "github-setup",
+            "--no-install",
+            "--no-interactive",
+            str(target),
+        ]
+    )
+    result = runner.invoke(app, argv[1:])
+    text = (result.stdout or "") + (result.stderr or "")
+    assert result.exit_code == 0, text
+    assert captured["project_directory"] == str(target)
+    options = captured["options"]
+    assert isinstance(options, dict)
+    addons = options["addons"]
+    assert isinstance(addons, list)
+    assert len(addons) == 2
+    assert not any(str(target) in a for a in addons)
 
 
 def test_preprocess_fixture_argv_bare_and_with_dir() -> None:
