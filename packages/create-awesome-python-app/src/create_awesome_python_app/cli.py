@@ -71,6 +71,49 @@ def _preprocess_fixture_argv(argv: list[str] | None = None) -> list[str]:
     return out
 
 
+def _expand_variadic_option(argv: list[str], option: str) -> list[str]:
+    """Expand ``--addons a b`` into ``--addons a --addons b`` (CNA Commander parity).
+
+    Typer's ``list[str]`` Option only accepts one value per flag. Commander uses
+    ``--addons [extensions...]``, so users naturally write space-separated lists.
+    """
+    out: list[str] = []
+    i = 0
+    prefix = option + "="
+    while i < len(argv):
+        arg = argv[i]
+        if arg == option:
+            i += 1
+            values: list[str] = []
+            while i < len(argv) and not argv[i].startswith("-"):
+                values.append(argv[i])
+                i += 1
+            if not values:
+                out.append(option)
+            else:
+                for value in values:
+                    out.extend([option, value])
+            continue
+        if arg.startswith(prefix):
+            value = arg[len(prefix) :]
+            out.extend([option, value] if value else [option])
+            i += 1
+            continue
+        out.append(arg)
+        i += 1
+    return out
+
+
+def _preprocess_cli_argv(argv: list[str] | None = None) -> list[str]:
+    """Apply argv rewrites needed before Typer parses the CLI."""
+    out = _preprocess_fixture_argv(argv)
+    out = _expand_variadic_option(out, "--addons")
+    out = _expand_variadic_option(out, "--extend")
+    if argv is None:
+        sys.argv = out
+    return out
+
+
 def apply_fixture_mode(fixture: str | None) -> None:
     """Translate ``--fixture`` into ``CPA_CATALOG_FIXTURE`` / ``CPA_FIXTURE_DIR``."""
     if fixture is None and os.environ.get("CPA_CATALOG_FIXTURE") != "1":
@@ -204,7 +247,7 @@ def main() -> None:
     treat `cache` as project_directory).
     """
     check_python_version(">=3.12", "create-awesome-python-app")
-    _preprocess_fixture_argv()
+    _preprocess_cli_argv()
     if len(sys.argv) > 1 and sys.argv[1] == "cache":
         sys.argv = [sys.argv[0], *sys.argv[2:]]
         cache_app(prog_name="create-awesome-python-app cache")
