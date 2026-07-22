@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Monday 06:00 UTC (CNA parity)
+    - cron: "0 6 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -19,10 +22,12 @@ env:
   # After create-awesome-python-app>=0.2.0 ships resolve_catalog_spec, slugs also work.
   CPA_TEMPLATE_FASTAPI: https://github.com/Create-Python-App/cpa-templates?subdir=templates/fastapi-starter
   CPA_ADDON_DOCKER: https://github.com/Create-Python-App/cpa-templates?subdir=extensions/fastapi-docker
+  CPA_ADDON_GITHUB: https://github.com/Create-Python-App/cpa-templates?subdir=extensions/all-github-setup
 
 jobs:
   scaffold:
     name: ${{ matrix.os }} / fastapi-starter
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -72,22 +77,29 @@ jobs:
           PY
 
   addon-smoke:
-    name: ubuntu-latest / fastapi-starter + fastapi-docker
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} / fastapi-starter + docker + github-setup
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: astral-sh/setup-uv@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      - name: Scaffold with one extension from PyPI CLI
+      - name: Scaffold with compatible addon combination
         env:
-          TARGET: ${{ runner.temp }}/cpa-fastapi-docker
+          TARGET: ${{ runner.temp }}/cpa-fastapi-addons
+        shell: bash
         run: |
           set -euo pipefail
           uvx create-awesome-python-app@latest \
             --template "$CPA_TEMPLATE_FASTAPI" \
             --addons "$CPA_ADDON_DOCKER" \
+            --addons "$CPA_ADDON_GITHUB" \
             --no-interactive \
             --no-install \
             --force \
@@ -95,8 +107,10 @@ jobs:
 
       - name: Verify extension files
         env:
-          TARGET: ${{ runner.temp }}/cpa-fastapi-docker
+          TARGET: ${{ runner.temp }}/cpa-fastapi-addons
+        shell: bash
         run: |
           set -euo pipefail
           test -f "$TARGET/Dockerfile"
           test -f "$TARGET/.dockerignore"
+          test -d "$TARGET/.github"
