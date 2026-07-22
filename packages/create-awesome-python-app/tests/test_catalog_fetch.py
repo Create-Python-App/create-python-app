@@ -13,6 +13,9 @@ from create_awesome_python_app.catalog import (
     catalog_url,
     get_catalog_data,
     reset_catalog_cache_for_tests,
+    reset_fixture_root_for_tests,
+    resolve_fixture_root,
+    set_fixture_root_for_tests,
 )
 
 FIXTURE_PATH = (
@@ -23,7 +26,13 @@ FIXTURE_PATH = (
 @pytest.fixture(autouse=True)
 def _reset_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     reset_catalog_cache_for_tests()
+    reset_fixture_root_for_tests()
     monkeypatch.setenv("CPA_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.delenv("CPA_FIXTURE_DIR", raising=False)
+    monkeypatch.delenv("CPA_CATALOG_FIXTURE", raising=False)
+    yield
+    reset_fixture_root_for_tests()
+    reset_catalog_cache_for_tests()
 
 
 def test_default_catalog_url(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -83,3 +92,35 @@ def test_get_catalog_data_disk_fallback_on_network_error(
 
 def test_default_url_points_to_cpa_templates() -> None:
     assert DEFAULT_CATALOG_URL.endswith("/cpa-templates/main/templates.json")
+
+
+def test_resolve_fixture_root_respects_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CPA_FIXTURE_DIR", str(tmp_path))
+    assert resolve_fixture_root() == tmp_path.resolve()
+
+
+def test_get_catalog_data_fixture_uses_custom_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    catalog_dir = tmp_path / "fixtures" / "catalog"
+    catalog_dir.mkdir(parents=True)
+    payload = {
+        "templates": [{"slug": "from-env-fixture"}],
+        "extensions": [],
+        "categories": [],
+    }
+    (catalog_dir / "templates.json").write_text(
+        json.dumps(payload), encoding="utf-8"
+    )
+    monkeypatch.setenv("CPA_CATALOG_FIXTURE", "1")
+    monkeypatch.setenv("CPA_FIXTURE_DIR", str(tmp_path))
+    data = get_catalog_data(force_refresh=True)
+    assert data["templates"][0]["slug"] == "from-env-fixture"
+
+
+def test_set_fixture_root_for_tests(tmp_path: Path) -> None:
+    set_fixture_root_for_tests(tmp_path)
+    assert resolve_fixture_root() == tmp_path
+    reset_fixture_root_for_tests()

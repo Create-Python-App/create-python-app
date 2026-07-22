@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -6,16 +7,26 @@ from create_awesome_python_app.cli import app
 from typer.testing import CliRunner
 
 runner = CliRunner()
-_CPA_ENV_VARS = ("CPA_REFRESH", "CPA_NO_CATALOG_CACHE", "CPA_CACHE_DIR")
+_CPA_ENV_VARS = (
+    "CPA_REFRESH",
+    "CPA_NO_CATALOG_CACHE",
+    "CPA_CACHE_DIR",
+    "CPA_CATALOG_FIXTURE",
+    "CPA_FIXTURE_DIR",
+)
 
 
 @pytest.fixture(autouse=True)
 def _clean_cpa_env(monkeypatch):
+    from create_awesome_python_app.catalog import reset_catalog_cache_for_tests
+
     for name in _CPA_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+    reset_catalog_cache_for_tests()
     yield
     for name in _CPA_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+    reset_catalog_cache_for_tests()
 
 
 def test_version() -> None:
@@ -223,3 +234,75 @@ def test_incompatible_addons_fail_fast(tmp_path: Path, monkeypatch) -> None:
     assert result.exit_code == 2
     assert "Incompatible extension combination" in text
     assert "saga" in text
+
+
+def test_help_mentions_fixture() -> None:
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "--fixture" in result.stdout
+
+
+def test_preprocess_fixture_argv_bare_and_with_dir() -> None:
+    from create_awesome_python_app.cli import _FIXTURE_AUTO, _preprocess_fixture_argv
+
+    assert _preprocess_fixture_argv(["cpa", "--fixture", "--list-templates"]) == [
+        "cpa",
+        f"--fixture={_FIXTURE_AUTO}",
+        "--list-templates",
+    ]
+    assert _preprocess_fixture_argv(
+        ["cpa", "--fixture", "./my-fixtures", "--list-templates"]
+    ) == ["cpa", "--fixture", "./my-fixtures", "--list-templates"]
+
+
+def test_fixture_flag_enables_catalog_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from create_awesome_python_app.cli import _FIXTURE_AUTO, apply_fixture_mode
+
+    apply_fixture_mode(_FIXTURE_AUTO)
+    assert os.environ.get("CPA_CATALOG_FIXTURE") == "1"
+    assert "CPA_FIXTURE_DIR" not in os.environ
+
+    monkeypatch.delenv("CPA_CATALOG_FIXTURE", raising=False)
+    monkeypatch.delenv("CPA_FIXTURE_DIR", raising=False)
+    apply_fixture_mode(str(tmp_path))
+    assert os.environ.get("CPA_CATALOG_FIXTURE") == "1"
+    assert os.environ.get("CPA_FIXTURE_DIR") == str(tmp_path)
+
+
+def test_list_templates_with_fixture_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+    import os
+
+    catalog_dir = tmp_path / "fixtures" / "catalog"
+    catalog_dir.mkdir(parents=True)
+    (catalog_dir / "templates.json").write_text(
+        json.dumps(
+            {
+                "templates": [
+                    {
+                        "slug": "fixture-only",
+                        "category": "tooling",
+                        "type": "cli",
+                    }
+                ],
+                "extensions": [],
+                "categories": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("CPA_CATALOG_FIXTURE", raising=False)
+    monkeypatch.delenv("CPA_FIXTURE_DIR", raising=False)
+
+    result = runner.invoke(
+        app,
+        ["--fixture", str(tmp_path), "--list-templates"],
+    )
+    text = (result.stdout or "") + (result.stderr or "")
+    assert result.exit_code == 0, text
+    assert "fixture-only" in text
+    assert os.environ.get("CPA_CATALOG_FIXTURE") == "1"

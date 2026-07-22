@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,9 @@ from rich.console import Console
 
 from create_awesome_python_app import __version__
 
+# Sentinel for bare ``--fixture`` (optional DIR rewritten in argv preprocess).
+_FIXTURE_AUTO = "__CPA_FIXTURE_AUTO__"
+
 app = typer.Typer(
     name="create-awesome-python-app",
     help="Composable scaffolding CLI for production-ready Python apps.",
@@ -34,6 +38,43 @@ app = typer.Typer(
 cache_app = typer.Typer(help="Inspect and manage the local template cache")
 app.add_typer(cache_app, name="cache")
 console = Console(stderr=True)
+
+
+def _preprocess_fixture_argv(argv: list[str] | None = None) -> list[str]:
+    """Rewrite bare ``--fixture`` to ``--fixture=__CPA_FIXTURE_AUTO__``.
+
+    Typer/Click requires an option argument; Commander allows ``--fixture [dir]``.
+    This keeps CNA-compatible UX: ``--fixture`` alone enables auto-detect mode.
+    """
+    raw = list(sys.argv if argv is None else argv)
+    if not raw:
+        return raw
+    out = [raw[0]]
+    i = 1
+    while i < len(raw):
+        arg = raw[i]
+        if arg == "--fixture":
+            if i + 1 < len(raw) and not raw[i + 1].startswith("-"):
+                out.extend(["--fixture", raw[i + 1]])
+                i += 2
+            else:
+                out.append(f"--fixture={_FIXTURE_AUTO}")
+                i += 1
+            continue
+        out.append(arg)
+        i += 1
+    if argv is None:
+        sys.argv = out
+    return out
+
+
+def apply_fixture_mode(fixture: str | None) -> None:
+    """Translate ``--fixture`` into ``CPA_CATALOG_FIXTURE`` / ``CPA_FIXTURE_DIR``."""
+    if fixture is None and os.environ.get("CPA_CATALOG_FIXTURE") != "1":
+        return
+    os.environ["CPA_CATALOG_FIXTURE"] = "1"
+    if fixture is not None and fixture != _FIXTURE_AUTO and fixture != "":
+        os.environ["CPA_FIXTURE_DIR"] = fixture
 
 
 def _in_ci() -> bool:
@@ -159,9 +200,8 @@ def main() -> None:
     `create-awesome-python-app cache dir` works (Typer would otherwise
     treat `cache` as project_directory).
     """
-    import sys
-
     check_python_version(">=3.12", "create-awesome-python-app")
+    _preprocess_fixture_argv()
     if len(sys.argv) > 1 and sys.argv[1] == "cache":
         sys.argv = [sys.argv[0], *sys.argv[2:]]
         cache_app(prog_name="create-awesome-python-app cache")
@@ -192,6 +232,15 @@ def scaffold(
     refresh: str | None = typer.Option(None, "--refresh"),
     strict_version: bool = typer.Option(False, "--strict-version"),
     keep_on_failure: bool = typer.Option(False, "--keep-on-failure"),
+    fixture: str | None = typer.Option(
+        None,
+        "--fixture",
+        help=(
+            "Load the template catalog from the local fixtures/ directory "
+            "instead of the network (optional DIR = repo root; also "
+            "CPA_FIXTURE_DIR / CPA_CATALOG_FIXTURE)"
+        ),
+    ),
 ) -> None:
     if version:
         console.print(__version__)
@@ -200,6 +249,10 @@ def scaffold(
         print_env_info()
     if ctx.invoked_subcommand is not None:
         return
+
+    # Translate --fixture into env vars before catalog loads
+    # (--list-templates / interactive / scaffold).
+    apply_fixture_mode(fixture)
 
     if list_templates or list_addons:
         from create_awesome_python_app.catalog import list_addons as la
