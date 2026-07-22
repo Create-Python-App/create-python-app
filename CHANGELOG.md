@@ -2,7 +2,7 @@
 
 ## 0.2.8 - 2026-07-22
 
-### CLI
+### CLI / argv
 
 - Accept space-separated `--addons` / `--extend` values (CNA Commander parity): `--addons fastapi-docker github-setup` expands to repeated flags before Typer parses.
 

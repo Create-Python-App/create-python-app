@@ -272,7 +272,10 @@ def test_options_after_project_directory(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_expand_variadic_addons_and_extend() -> None:
-    from create_awesome_python_app.cli import _expand_variadic_option, _preprocess_cli_argv
+    from create_awesome_python_app.cli import (
+        _expand_variadic_option,
+        _preprocess_cli_argv,
+    )
 
     assert _expand_variadic_option(
         ["cpa", "my-api", "--addons", "fastapi-docker", "github-setup", "--no-install"],
