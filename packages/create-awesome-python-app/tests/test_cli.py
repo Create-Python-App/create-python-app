@@ -223,6 +223,54 @@ def test_help_mentions_fixture() -> None:
     assert "fixture" in text.lower()
 
 
+def test_options_after_project_directory(tmp_path: Path, monkeypatch) -> None:
+    """Regression: README-style `cpa my-api --template …` must work.
+
+    Registering a Typer subcommand group made Click treat ``--template`` as a
+    COMMAND after the positional project directory.
+    """
+    tpl = tmp_path / "tpl"
+    tpl.mkdir()
+    captured: dict[str, object] = {}
+
+    async def fake_check_for_latest_version(_package_name):
+        return None
+
+    async def fake_create_python_app(project_directory, options, *_args, **_kwargs):
+        captured["project_directory"] = project_directory
+        captured["options"] = options
+
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.check_for_latest_version",
+        fake_check_for_latest_version,
+    )
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.create_python_app",
+        fake_create_python_app,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "my-api",
+            "--template",
+            f"file://{tpl}",
+            "--addons",
+            "github-setup",
+            "--no-install",
+            "--no-interactive",
+        ],
+    )
+
+    text = (result.stdout or "") + (result.stderr or "")
+    assert result.exit_code == 0, text
+    assert "No such command" not in text
+    assert captured["project_directory"] == "my-api"
+    options = captured["options"]
+    assert isinstance(options, dict)
+    assert options["template"] == f"file://{tpl}"
+
+
 def test_preprocess_fixture_argv_bare_and_with_dir() -> None:
     from create_awesome_python_app.cli import _FIXTURE_AUTO, _preprocess_fixture_argv
 

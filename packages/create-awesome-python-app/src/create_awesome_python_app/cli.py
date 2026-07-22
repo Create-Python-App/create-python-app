@@ -34,9 +34,12 @@ app = typer.Typer(
     help="Composable scaffolding CLI for production-ready Python apps.",
     no_args_is_help=False,
     add_completion=True,
+    # Keep cache out of this Typer app (routed in main()). A nested command
+    # group turns the CLI into Click Group form `[ARGS] COMMAND`, so
+    # `cpa my-api --template …` fails with "No such command '--template'".
+    epilog="Cache: create-awesome-python-app cache [list|dir|clean|verify|…]",
 )
 cache_app = typer.Typer(help="Inspect and manage the local template cache")
-app.add_typer(cache_app, name="cache")
 console = Console(stderr=True)
 
 
@@ -209,9 +212,8 @@ def main() -> None:
     app()
 
 
-@app.callback(invoke_without_command=True)
+@app.command(name="create-awesome-python-app")
 def scaffold(
-    ctx: typer.Context,
     project_directory: str | None = typer.Argument("my-project"),
     version: bool = typer.Option(False, "--version"),
     info: bool = typer.Option(False, "--info", "-i"),
@@ -247,8 +249,6 @@ def scaffold(
         raise typer.Exit(0)
     if info:
         print_env_info()
-    if ctx.invoked_subcommand is not None:
-        return
 
     # Translate --fixture into env vars before catalog loads
     # (--list-templates / interactive / scaffold).
