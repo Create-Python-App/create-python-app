@@ -27,7 +27,10 @@ inherit `requires-python` from their template.
 `Target directory is not empty: <path>`.
 
 **Cause:** CPA refuses to scaffold into a directory that already contains files,
-to avoid overwriting user data.
+to avoid overwriting user data. The default target is `my-project` when no
+directory argument is given — a leftover from a previous run is a common tripwire.
+Interactive mode checks this **before** the template/extension prompts so you
+do not lose a full wizard session to a traceback.
 
 **Fix:**
 

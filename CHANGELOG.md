@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.10 - 2026-07-22
+
+### CLI / UX
+
+- Validate non-empty target directory **before** the interactive wizard so a leftover default `my-project/` does not waste a full prompt session.
+- Exit cleanly with a hint to use `--force` or pick a different directory name (no traceback).
+
 ## 0.2.9 - 2026-07-22
 
 ### CLI / argv trailing directory

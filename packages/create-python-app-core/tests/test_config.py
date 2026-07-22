@@ -30,6 +30,6 @@ def test_bad_json(tmp_path: Path) -> None:
 
 def test_non_empty(tmp_path: Path) -> None:
     (tmp_path / "f").write_text("x")
-    with pytest.raises(NonEmptyTargetDirectoryError):
+    with pytest.raises(NonEmptyTargetDirectoryError, match="Use --force"):
         assert_directory_is_empty(tmp_path)
     assert_directory_is_empty(tmp_path, force=True)

@@ -12,6 +12,8 @@ import typer
 from create_python_app_core import (
     ConfigParseError,
     CpaCustomOption,
+    NonEmptyTargetDirectoryError,
+    assert_directory_is_empty,
     check_for_latest_version,
     check_python_version,
     create_python_app,
@@ -323,6 +325,18 @@ def scaffold(
             la(template)
         raise typer.Exit(0)
 
+    target_directory = project_directory or "my-project"
+    # Fail before the interactive wizard so a leftover `my-project/` does not
+    # waste a full prompt session (and so we exit cleanly, not with a traceback).
+    if not force:
+        try:
+            assert_directory_is_empty(
+                Path(target_directory).expanduser().resolve(), force=False
+            )
+        except NonEmptyTargetDirectoryError as err:
+            console.print(f"[red]{err}[/red]")
+            raise typer.Exit(1) from err
+
     effective_refresh = _normalize_refresh(refresh)
     if refresh and effective_refresh is None:
         console.print(
@@ -540,25 +554,31 @@ def scaffold(
             raise typer.Exit(1)
         console.print(f"[yellow]{msg}[/yellow]")
 
-    asyncio.run(
-        create_python_app(
-            project_directory or "my-project",
-            {
-                "template": template,
-                "addons": addons or [],
-                "extend": extend or [],
-                "install": not no_install,
-                "force": force,
-                "verbose": verbose,
-                "offline": offline,
-                "refresh": effective_refresh,
-                "keep_on_failure": keep_on_failure,
-                "cache_dir": str(cache_dir) if cache_dir else None,
-                "set": set_map,
-            },
+    try:
+        asyncio.run(
+            create_python_app(
+                target_directory,
+                {
+                    "template": template,
+                    "addons": addons or [],
+                    "extend": extend or [],
+                    "install": not no_install,
+                    "force": force,
+                    "verbose": verbose,
+                    "offline": offline,
+                    "refresh": effective_refresh,
+                    "keep_on_failure": keep_on_failure,
+                    "cache_dir": str(cache_dir) if cache_dir else None,
+                    "set": set_map,
+                },
+            )
         )
-    )
-    console.print(f"[green]Created[/green] {project_directory}")
+    except NonEmptyTargetDirectoryError as err:
+        # Safety net if the target fills up after the early check (e.g. during
+        # a long interactive session).
+        console.print(f"[red]{err}[/red]")
+        raise typer.Exit(1) from err
+    console.print(f"[green]Created[/green] {target_directory}")
 
 
 @cache_app.command("dir")

@@ -541,3 +541,91 @@ def test_list_templates_with_fixture_dir(
     assert result.exit_code == 0, text
     assert "fixture-only" in text
     assert os.environ.get("CPA_CATALOG_FIXTURE") == "1"
+
+
+def test_non_empty_target_fails_before_scaffold(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Leftover target dir must fail immediately — not after interactive work."""
+    target = tmp_path / "existing"
+    target.mkdir()
+    (target / "leftover.txt").write_text("already here", encoding="utf-8")
+    tpl = tmp_path / "tpl"
+    tpl.mkdir()
+    called: dict[str, bool] = {"create": False}
+
+    async def fake_check_for_latest_version(_package_name):
+        return None
+
+    async def fake_create_python_app(*_args, **_kwargs):
+        called["create"] = True
+
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.check_for_latest_version",
+        fake_check_for_latest_version,
+    )
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.create_python_app",
+        fake_create_python_app,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--template",
+            f"file://{tpl}",
+            "--no-install",
+            "--no-interactive",
+            str(target),
+        ],
+    )
+    text = (result.stdout or "") + (result.stderr or "")
+    assert result.exit_code == 1, text
+    assert "not empty" in text.lower()
+    assert "--force" in text
+    assert called["create"] is False
+
+
+def test_non_empty_target_allows_force(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "existing"
+    target.mkdir()
+    (target / "leftover.txt").write_text("already here", encoding="utf-8")
+    tpl = tmp_path / "tpl"
+    tpl.mkdir()
+    captured: dict[str, object] = {}
+
+    async def fake_check_for_latest_version(_package_name):
+        return None
+
+    async def fake_create_python_app(project_directory, options, *_args, **_kwargs):
+        captured["project_directory"] = project_directory
+        captured["options"] = options
+
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.check_for_latest_version",
+        fake_check_for_latest_version,
+    )
+    monkeypatch.setattr(
+        "create_awesome_python_app.cli.create_python_app",
+        fake_create_python_app,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--template",
+            f"file://{tpl}",
+            "--force",
+            "--no-install",
+            "--no-interactive",
+            str(target),
+        ],
+    )
+    text = (result.stdout or "") + (result.stderr or "")
+    assert result.exit_code == 0, text
+    assert captured["project_directory"] == str(target)
+    options = captured["options"]
+    assert isinstance(options, dict)
+    assert options["force"] is True
