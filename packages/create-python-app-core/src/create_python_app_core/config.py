@@ -60,4 +60,7 @@ def assert_directory_is_empty(path: Path, *, force: bool = False) -> None:
     if force:
         return
     if path.exists() and any(path.iterdir()):
-        raise NonEmptyTargetDirectoryError(f"Target directory is not empty: {path}")
+        raise NonEmptyTargetDirectoryError(
+            f"Target directory is not empty: {path}. "
+            "Use --force to continue, or pick a different directory name."
+        )
