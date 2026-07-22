@@ -70,3 +70,44 @@ def test_process_file_copy(tmp_path: Path) -> None:
     written = process_file(src, dest, Path("a.txt"), context={})
     assert written == dest / "a.txt"
     assert (dest / "a.txt").read_text() == "x"
+
+
+def test_copy_file_efficient_roundtrip(tmp_path: Path) -> None:
+    from create_python_app_core.loaders import copy_file_efficient
+
+    src = tmp_path / "src.bin"
+    src.write_bytes(b"hello-copy")
+    dest = tmp_path / "nested" / "dest.bin"
+    method = copy_file_efficient(src, dest)
+    assert method in {"reflink", "hardlink", "copy"}
+    assert dest.read_bytes() == b"hello-copy"
+
+
+def test_copy_file_efficient_skips_hardlink_when_disabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from create_python_app_core.loaders import copy_file_efficient
+
+    monkeypatch.setenv("CPA_COPY_HARDLINK", "0")
+    src = tmp_path / "src.txt"
+    src.write_text("data")
+    dest = tmp_path / "dest.txt"
+    method = copy_file_efficient(src, dest, allow_hardlink=True)
+    assert method in {"reflink", "copy"}
+    assert dest.read_text() == "data"
+
+
+def test_copy_file_efficient_disallow_hardlink(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from create_python_app_core.loaders import copy_file_efficient
+
+    # Force past reflink by stubbing subprocess failures if needed;
+    # allow_hardlink=False must never return hardlink.
+    monkeypatch.setenv("CPA_COPY_HARDLINK", "1")
+    src = tmp_path / "src.txt"
+    src.write_text("data")
+    dest = tmp_path / "dest.txt"
+    method = copy_file_efficient(src, dest, allow_hardlink=False)
+    assert method != "hardlink"
+    assert dest.read_text() == "data"

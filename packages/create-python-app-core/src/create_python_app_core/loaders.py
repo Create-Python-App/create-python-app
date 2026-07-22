@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import shutil
+import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from jinja2 import Environment, StrictUndefined, TemplateError
 
@@ -17,6 +19,54 @@ _JINJA = Environment(
     keep_trailing_newline=True,
     autoescape=False,
 )
+
+CopyMethod = Literal["reflink", "hardlink", "copy"]
+
+
+def copy_file_efficient(
+    src: Path,
+    dest: Path,
+    *,
+    allow_hardlink: bool = True,
+) -> CopyMethod:
+    """Copy a file using reflink → hardlink → ``shutil.copy2`` (CNA parity).
+
+    Hardlinks are skipped when ``allow_hardlink`` is False (e.g. files that will
+    be mutated by template rendering) or when ``CPA_COPY_HARDLINK=0``.
+    """
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.exists():
+        dest.unlink()
+
+    hardlink_ok = allow_hardlink and os.environ.get("CPA_COPY_HARDLINK", "1") != "0"
+
+    if os.name != "nt":
+        # 1) Reflink / clonefile (near-instant CoW on Btrfs/XFS/ZFS/APFS).
+        for args in (
+            ["cp", "-c", "--", str(src), str(dest)],  # macOS clonefile
+            ["cp", "--reflink=auto", "--", str(src), str(dest)],  # GNU
+        ):
+            try:
+                subprocess.run(args, check=True, capture_output=True)
+                if dest.is_file():
+                    shutil.copystat(src, dest, follow_symlinks=True)
+                    return "reflink"
+            except (FileNotFoundError, subprocess.CalledProcessError, OSError):
+                if dest.exists():
+                    dest.unlink(missing_ok=True)
+
+        # 2) Hardlink (same inode — avoided for rendered/mutated files).
+        if hardlink_ok:
+            try:
+                os.link(src, dest)
+                return "hardlink"
+            except OSError:
+                if dest.exists():
+                    dest.unlink(missing_ok=True)
+
+    # 3) Full recursive metadata-preserving copy.
+    shutil.copy2(src, dest)
+    return "copy"
 
 
 def _mode_from_path(rel: Path) -> str:
@@ -104,8 +154,9 @@ def process_file(
 
     if target.exists() and not overwrite:
         return None
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, target)
+    # Plain files: reflink → hardlink → copy2. Never hardlink .template
+    # paths (handled above); allow_hardlink stays True for immutable copies.
+    copy_file_efficient(src, target, allow_hardlink=True)
     return target
 
 
