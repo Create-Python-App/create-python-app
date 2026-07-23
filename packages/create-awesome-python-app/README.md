@@ -26,7 +26,7 @@ From blank folder to a working FastAPI, Django, Celery, CLI, or uv workspace pro
 [![MegaLinter][megalinterbadge]][megalinterurl]
 [![Shellcheck][shellcheckbadge]][shellcheckurl]
 [![Commit Activity][commitactivitybadge]][commitactivityurl]
-[![Discord](https://img.shields.io/discord/1527933660764831825?label=Discord&logo=discord&logoColor=white)](https://discord.gg/dwFTsR7fK2)
+[![Discord](https://img.shields.io/discord/1527933660764831825?label=Discord&logo=discord&logoColor=white)](https://discord.gg/bR5VyATgka)
 
 **[Official Site](https://create-awesome-python-app.vercel.app)** · [Templates](https://create-awesome-python-app.vercel.app/templates) · [Extensions](https://create-awesome-python-app.vercel.app/extensions) · [Docs](https://create-awesome-python-app.vercel.app/docs) · [GitHub](https://github.com/Create-Python-App/create-python-app) · [PyPI](https://pypi.org/project/create-awesome-python-app/)
 
