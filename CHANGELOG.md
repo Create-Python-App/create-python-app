@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.11 - 2026-07-23
+
+### CLI / argv after template URL
+
+- Do not treat `--template` / `-t` / other option *values* (e.g. `file://…`) as the project positional when expanding `--addons` / `--extend`. Fixes trailing `project_directory` being swallowed as an addon slug after a template URL (#245).
+
 ## 0.2.10 - 2026-07-22
 
 ### CLI / UX
