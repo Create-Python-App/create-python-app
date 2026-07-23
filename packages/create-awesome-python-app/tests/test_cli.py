@@ -373,6 +373,69 @@ def test_expand_preserves_trailing_project_directory() -> None:
     ]
 
 
+def test_expand_preserves_dir_after_template_file_url() -> None:
+    """``--template file://…`` must not block peeling a trailing project dir (#245)."""
+    from create_awesome_python_app.cli import _preprocess_cli_argv
+
+    # Single addon URL + directory at EOS (scaffold-check / L3 shape).
+    assert _preprocess_cli_argv(
+        [
+            "cpa",
+            "--template",
+            "file:///tmp/cpa?subdir=templates/fastapi-starter",
+            "--no-interactive",
+            "--no-install",
+            "--addons",
+            "file:///tmp/cpa?subdir=extensions/github-setup",
+            "/tmp/my-api",
+        ]
+    ) == [
+        "cpa",
+        "--template",
+        "file:///tmp/cpa?subdir=templates/fastapi-starter",
+        "--no-interactive",
+        "--no-install",
+        "--addons",
+        "file:///tmp/cpa?subdir=extensions/github-setup",
+        "/tmp/my-api",
+    ]
+    # Space-separated addons after a file:// template value.
+    assert _preprocess_cli_argv(
+        [
+            "cpa",
+            "--template",
+            "file:///tmp/x",
+            "--addons",
+            "fastapi-docker",
+            "github-setup",
+            "/tmp/app",
+        ]
+    ) == [
+        "cpa",
+        "--template",
+        "file:///tmp/x",
+        "--addons",
+        "fastapi-docker",
+        "--addons",
+        "github-setup",
+        "/tmp/app",
+    ]
+    # Short -t form.
+    assert (
+        _preprocess_cli_argv(
+            [
+                "cpa",
+                "-t",
+                "file:///tmp/x",
+                "--addons",
+                "github-setup",
+                "scaffold-check",
+            ]
+        )[-1]
+        == "scaffold-check"
+    )
+
+
 def test_space_separated_addons_after_project_directory(
     tmp_path: Path, monkeypatch
 ) -> None:

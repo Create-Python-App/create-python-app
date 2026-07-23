@@ -73,6 +73,22 @@ def _preprocess_fixture_argv(argv: list[str] | None = None) -> list[str]:
     return out
 
 
+# Flags that consume the following argv token as their value (not a positional).
+_VALUE_TAKING_FLAGS = frozenset(
+    {
+        "--template",
+        "-t",
+        "--set",
+        "--pin",
+        "--refresh",
+        "--cache-dir",
+        "--fixture",
+        "--addons",
+        "--extend",
+    }
+)
+
+
 def _expand_variadic_option(argv: list[str], option: str) -> list[str]:
     """Expand ``--addons a b`` into ``--addons a --addons b`` (CNA Commander parity).
 
@@ -82,6 +98,9 @@ def _expand_variadic_option(argv: list[str], option: str) -> list[str]:
     When ``project_directory`` comes *after* options and no positional was seen
     yet, peel the final trailing token at EOS back as the directory so that
     ``--addons a --addons b /tmp/app`` does not treat ``/tmp/app`` as an addon.
+
+    Option *values* (e.g. ``--template file://…``) must not set ``saw_positional``,
+    or a trailing directory after ``--addons`` is never peeled (#245).
     """
     out: list[str] = []
     i = 0
@@ -114,7 +133,9 @@ def _expand_variadic_option(argv: list[str], option: str) -> list[str]:
             i += 1
             continue
         if i > 0 and not arg.startswith("-"):
-            saw_positional = True
+            prev = out[-1] if out else ""
+            if prev not in _VALUE_TAKING_FLAGS:
+                saw_positional = True
         out.append(arg)
         i += 1
     return out
