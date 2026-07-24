@@ -75,9 +75,9 @@ from create_python_app_core import resolve_source, get_template_dir_path
 source = resolve_source(
     "https://github.com/Create-Python-App/cpa-templates?ref=main&subdir=fastapi"
 )
-print(source.kind)   # github
-print(source.ref)    # main
-print(source.subdir) # fastapi
+print(source.kind)  # github
+print(source.ref)  # main
+print(source.subdir)  # fastapi
 ```
 
 ### Download a repository into the cache

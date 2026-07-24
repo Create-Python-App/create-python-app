@@ -27,7 +27,7 @@ Hacktoberfest is a good time to contribute to the Create Python App ecosystem, e
 ## Before you start
 
 - Read [CONTRIBUTING.md](../CONTRIBUTING.md) first so you know the local workflow and expected PR style.
-- Join the community Discord for quick questions and coordination: https://discord.gg/bR5VyATgka
+- Join the community Discord for quick questions and coordination: [Discord](https://discord.gg/bR5VyATgka)
 - If you are considering an assigned epic such as AI/ML catalog work, avoid duplicating it casually. Confirm the issue is still open and ask in Discord or on the issue thread before you start a parallel effort.
 
 ## Suggested first tasks
