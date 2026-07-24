@@ -5,6 +5,35 @@ description = "Composable scaffolding CLI for production-ready Python apps"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
+keywords = [
+    "scaffold",
+    "scaffolding",
+    "cookiecutter",
+    "fastapi",
+    "django",
+    "celery",
+    "typer",
+    "uv",
+    "cli",
+    "project-generator",
+    "starter",
+    "boilerplate",
+    "template",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
 dependencies = [
     "create-python-app-core>=0.2.10",
     "questionary>=2.1.1",
