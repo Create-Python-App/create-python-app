@@ -12,6 +12,7 @@ One command. Any stack.
 [![Lint](https://github.com/Create-Python-App/create-python-app/actions/workflows/lint.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/lint.yml)
 [![Typecheck](https://github.com/Create-Python-App/create-python-app/actions/workflows/type-check.yml/badge.svg)](https://github.com/Create-Python-App/create-python-app/actions/workflows/type-check.yml)
 [![PyPI](https://img.shields.io/pypi/v/create-awesome-python-app.svg)](https://pypi.org/project/create-awesome-python-app/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/create-awesome-python-app.svg)](https://pypi.org/project/create-awesome-python-app/)
 [![Docker](https://img.shields.io/docker/v/ulisesjeremias/create-awesome-python-app?style=flat-square&label=Docker&logo=docker&color=2496ED)](https://hub.docker.com/r/ulisesjeremias/create-awesome-python-app)
 [![AUR](https://img.shields.io/aur/version/create-awesome-python-app?label=AUR&logo=archlinux)](https://aur.archlinux.org/packages/create-awesome-python-app)
 [![Homebrew](https://img.shields.io/badge/homebrew-Create--Python--App%2Ftap-orange?logo=homebrew)](https://github.com/Create-Python-App/homebrew-tap)

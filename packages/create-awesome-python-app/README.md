@@ -11,6 +11,7 @@
 From blank folder to a working FastAPI, Django, Celery, CLI, or uv workspace project with modern tooling and team-friendly automation.
 
 [![PyPI][pypiversion]][pypiurl]
+[![PyPI Downloads][pypidownloads]][pypiurl]
 [![Python][pythonbadge]][pythonurl]
 [![Stars][starsbadge]][starsurl]
 [![License: MIT][licensebadge]][licenseurl]
@@ -582,6 +583,7 @@ _Built for developers who value speed, composability, craft, and AI-ready workfl
 [shellcheckbadge]: https://github.com/Create-Python-App/create-python-app/actions/workflows/shellcheck.yml/badge.svg
 [megalinterbadge]: https://github.com/Create-Python-App/create-python-app/actions/workflows/mega-linter.yml/badge.svg
 [pypiversion]: https://img.shields.io/pypi/v/create-awesome-python-app.svg?style=flat-square&color=3775A9
+[pypidownloads]: https://img.shields.io/pypi/dm/create-awesome-python-app.svg?style=flat-square
 [pythonbadge]: https://img.shields.io/pypi/pyversions/create-awesome-python-app.svg?style=flat-square
 [starsbadge]: https://img.shields.io/github/stars/Create-Python-App/create-python-app?style=flat-square&color=yellow
 [licensebadge]: https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square
