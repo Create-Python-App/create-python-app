@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.12 - 2026-07-28
+
+### Packaging
+
+- Add PyPI `keywords` and Trove `classifiers` to `create-awesome-python-app` and `create-python-app-core` `pyproject.toml` so the packages are discoverable on PyPI by scaffold/fastapi/django/celery/typer/uv/cli themes and filtered by Python version, license, and topic (#246).
+
 ## Unreleased
 
 ### Packaging
