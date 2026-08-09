@@ -135,3 +135,42 @@ def test_missing_subdir_forces_refresh_when_meta_is_fresh(tmp_path: Path) -> Non
 
     updated = download_repository(src, cache_root=cache, refresh="stale")
     assert (updated / "extensions" / "all-github-setup" / "ok.txt").is_file()
+
+
+def test_read_cache_meta_empty_dir(tmp_path: Path) -> None:
+    from create_python_app_core.git_cache import read_cache_meta
+
+    empty = tmp_path / "empty-entry"
+    empty.mkdir()
+    assert read_cache_meta(empty) is None
+    assert read_cache_meta(tmp_path / "missing") is None
+
+
+def test_read_cache_meta_corrupt_json(tmp_path: Path) -> None:
+    from create_python_app_core.errors import CpaError
+    from create_python_app_core.git_cache import meta_path, read_cache_meta
+
+    entry = tmp_path / "e"
+    entry.mkdir()
+    meta_path(entry).write_text("{not-json", encoding="utf-8")
+    with pytest.raises((json.JSONDecodeError, CpaError)):
+        read_cache_meta(entry)
+
+
+def test_refresh_after_hours_invalid_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    from create_python_app_core.git_cache import refresh_after_hours
+
+    monkeypatch.setenv("CPA_REFRESH_AFTER_HOURS", "not-a-number")
+    assert refresh_after_hours() == 24.0
+
+
+def test_should_refresh_modes() -> None:
+    from create_python_app_core.git_cache import CacheMeta, _should_refresh
+
+    meta = CacheMeta(url="u", ref="main", fetched_at=time.time(), commit="abc")
+    assert _should_refresh(None, "stale") is True
+    assert _should_refresh(meta, "manual") is False
+    assert _should_refresh(meta, "stale") is False
+    assert _should_refresh(meta, "always") is True
+    old = CacheMeta(url="u", ref="main", fetched_at=time.time() - 100_000, commit="abc")
+    assert _should_refresh(old, "stale") is True
