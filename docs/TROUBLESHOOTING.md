@@ -377,3 +377,82 @@ CI fails after a CLI release, fix/publish the CLI — do not teach template CI t
 `uv run` against source. See
 [cpa-templates#46](https://github.com/Create-Python-App/cpa-templates/issues/46)
 and [CPA_TEMPLATES_TRACKING.md](./CPA_TEMPLATES_TRACKING.md).
+
+## uv not found
+
+**Symptoms:** `uvx: command not found` or `No such file or directory` when
+running the CLI.
+
+**Cause:** `uvx` ships with [uv](https://docs.astral.sh/uv/), which is not
+installed on the machine (or is not on `PATH`).
+
+**Fix:**
+
+```bash
+# Install uv (official installer)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or via your package manager
+#   macOS:  brew install uv
+#   Windows: winget install astral-sh.uv
+```
+
+Then reopen your terminal so `uvx` is on `PATH`, and verify:
+
+```bash
+uvx --version
+```
+
+If you installed the CLI as a Python package instead, use `create-awesome-python-app`
+directly (see [Distribution channels](#distribution-channels)).
+
+## Windows `file://` URL quirks
+
+**Symptoms:** `CPA_CATALOG_URL="file:///..."` or a `file://` template URL fails
+on Windows with a path error or "URL could not be parsed".
+
+**Cause:** On Windows the `file://` scheme expects a drive letter and forward
+slashes. `file:///C:/path/to/templates.json` works; `file://C:\path\...` or a
+bare `C:\path` do not.
+
+**Fix:**
+
+```bash
+# Use forward slashes and an explicit drive letter
+set CPA_CATALOG_URL=file:///C:/path/to/cpa-templates/templates.json
+
+# In PowerShell
+$env:CPA_CATALOG_URL = "file:///C:/path/to/cpa-templates/templates.json"
+```
+
+If you still get a parse error, copy the catalog next to the project and use a
+relative path or `file:///` with the full absolute path.
+
+## Homebrew / AUR version lag
+
+**Symptoms:** A feature documented in the latest release does not exist, or
+`--version` reports an older number than the PyPI release.
+
+**Cause:** Homebrew and AUR packages are updated by their maintainers and can
+lag behind PyPI releases.
+
+**Fix:**
+
+```bash
+# Homebrew
+brew update && brew upgrade create-awesome-python-app
+
+# AUR
+yay -Syu create-awesome-python-app
+```
+
+If the lag blocks you, run the current release directly from PyPI instead:
+
+```bash
+uvx create-awesome-python-app@latest --version
+```
+
+## Still stuck?
+
+Join the [Create-Python-App Discord](https://discord.gg/create-python-app)
+and describe what you ran and the full error output.
