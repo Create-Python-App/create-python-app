@@ -35,6 +35,3 @@ DISABLE_LINTERS:
 
 SHOW_ELAPSED_TIME: true
 FILTER_REGEX_EXCLUDE: (uv\.lock|megalinter-reports/)
-# trufflehog >=3.96 Lob detector false-positives on `test_*` function names
-# (Lob test keys share the `test_` prefix). Keep every other detector active.
-REPOSITORY_TRUFFLEHOG_ARGS: "--exclude-detectors=Lob"
