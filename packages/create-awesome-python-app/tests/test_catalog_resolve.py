@@ -250,7 +250,7 @@ def test_group_extension_choices_preserves_category_order() -> None:
     assert grouped["ci"][0].value == "file:///extensions/github"
 
 
-def test_validate_extension_compatibility_ok() -> None:
+def test_extension_compatibility_valid() -> None:
     catalog = {
         "extensions": [
             {

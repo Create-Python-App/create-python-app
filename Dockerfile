@@ -29,7 +29,7 @@ RUN useradd --create-home --uid 1000 --shell /bin/bash app \
         sleep 15; \
     done
 
-USER app
+USER 1000
 WORKDIR /home/app
 
 ENTRYPOINT ["create-awesome-python-app"]
