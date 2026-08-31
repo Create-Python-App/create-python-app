@@ -1,0 +1,4 @@
+# Lob detector false-positives: any `test_*` function name looks like a Lob
+# test key (shared `test_` prefix). Exclude test fixtures from the scan;
+# production code stays fully covered.
+packages/create-awesome-python-app/tests/.*
