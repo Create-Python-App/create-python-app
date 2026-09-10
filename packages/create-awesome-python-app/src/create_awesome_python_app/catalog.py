@@ -572,21 +572,64 @@ def reset_catalog_cache_for_tests() -> None:
     _memory_ts = 0.0
 
 
-def list_templates() -> None:
+def _template_entries(data: dict[str, Any]) -> list[dict[str, Any]]:
+    return [t for t in data.get("templates", []) if isinstance(t, dict)]
+
+
+def _require_known_category(
+    categories: dict[str, CategoryInfo],
+    templates: list[dict[str, Any]],
+    category: str,
+) -> None:
+    known = {str(t.get("category", "")) for t in templates} | set(categories)
+    known.discard("")
+    if category not in known:
+        raise CatalogResolutionError(
+            f"Unknown category '{category}'. "
+            f"Available: {', '.join(sorted(known)) or '(none)'}"
+        )
+
+
+def _template_json(template: dict[str, Any]) -> dict[str, Any]:
+    labels = template.get("labels", [])
+    return {
+        "slug": str(template.get("slug", "")),
+        "name": str(template.get("name", template.get("slug", ""))),
+        "description": str(template.get("description", "")),
+        "category": str(template.get("category", "")),
+        "labels": [str(x) for x in labels] if isinstance(labels, list) else [],
+    }
+
+
+def templates_view(category: str | None = None) -> dict[str, Any]:
+    """Machine-readable template listing (``--list-templates --json``)."""
     data = get_catalog_data()
     categories = category_index(data)
-    templates = [t for t in data.get("templates", []) if isinstance(t, dict)]
+    templates = _template_entries(data)
+    if category:
+        _require_known_category(categories, templates, category)
+        templates = [t for t in templates if str(t.get("category", "")) == category]
+    return {"templates": [_template_json(t) for t in templates]}
+
+
+def list_templates(category: str | None = None) -> None:
+    data = get_catalog_data()
+    categories = category_index(data)
+    templates = _template_entries(data)
+    if category:
+        _require_known_category(categories, templates, category)
+        templates = [t for t in templates if str(t.get("category", "")) == category]
 
     console.print("[bold blue]\nAvailable Templates:[/bold blue]")
     # Preserve catalog category order, then any unknown slugs.
-    ordered_slugs = list(categories)
+    ordered_slugs = [category] if category else list(categories)
     seen: set[str] = set()
     for slug in ordered_slugs:
         seen.add(slug)
         group = [t for t in templates if str(t.get("category", "")) == slug]
         if not group:
             continue
-        info = categories[slug]
+        info = categories.get(slug) or CategoryInfo(slug=slug, name=slug)
         console.print(f"[bold green]\n{info.name}:[/bold green]")
         if info.description:
             console.print(f"  {info.description}")
@@ -605,7 +648,11 @@ def list_templates() -> None:
             if isinstance(labels, list) and labels:
                 console.print(f"    Keywords: {', '.join(str(x) for x in labels)}")
 
-    orphans = [t for t in templates if str(t.get("category", "")) not in seen]
+    orphans = (
+        []
+        if category
+        else [t for t in templates if str(t.get("category", "")) not in seen]
+    )
     if orphans:
         console.print("[bold green]\nOther:[/bold green]")
         for template in orphans:
@@ -614,15 +661,59 @@ def list_templates() -> None:
             console.print(f"  [yellow]{name}[/yellow] ([cyan]{tslug}[/cyan])")
 
 
+def _template_type_for(data: dict[str, Any], template_slug: str | None) -> str | None:
+    if not template_slug:
+        return None
+    for t in data.get("templates", []):
+        if isinstance(t, dict) and t.get("slug") == template_slug:
+            return str(t.get("type", ""))
+    return None
+
+
+def _addon_entries(
+    data: dict[str, Any], template_slug: str | None
+) -> list[dict[str, Any]]:
+    template_type = _template_type_for(data, template_slug)
+    entries = []
+    for ext in data.get("extensions", data.get("addons", [])):
+        if not isinstance(ext, dict):
+            continue
+        ext_types = ext.get("type", [])
+        if isinstance(ext_types, str):
+            ext_types = [ext_types]
+        if template_type and template_type not in ext_types:
+            continue
+        entries.append(ext)
+    return entries
+
+
+def _addon_json(ext: dict[str, Any]) -> dict[str, Any]:
+    labels = ext.get("labels", [])
+    ext_type = ext.get("type", [])
+    return {
+        "slug": str(ext.get("slug", "")),
+        "name": str(ext.get("name", ext.get("slug", ""))),
+        "description": str(ext.get("description", "")),
+        "category": str(ext.get("category", "custom")),
+        "type": [str(x) for x in ext_type]
+        if isinstance(ext_type, list)
+        else [str(ext_type)],
+        "labels": [str(x) for x in labels] if isinstance(labels, list) else [],
+    }
+
+
+def addons_view(template_slug: str | None = None) -> dict[str, Any]:
+    """Machine-readable addon listing (``--list-addons --json``)."""
+    data = get_catalog_data()
+    return {
+        "template": template_slug,
+        "addons": [_addon_json(e) for e in _addon_entries(data, template_slug)],
+    }
+
+
 def list_addons(template_slug: str | None = None) -> None:
     data = get_catalog_data()
     categories = category_index(data)
-    template_type: str | None = None
-    if template_slug:
-        for t in data.get("templates", []):
-            if isinstance(t, dict) and t.get("slug") == template_slug:
-                template_type = str(t.get("type", ""))
-                break
 
     console.print("[bold blue]\nAvailable Addons:[/bold blue]")
     if template_slug:
@@ -630,18 +721,9 @@ def list_addons(template_slug: str | None = None) -> None:
             f"[bold green]\nCompatible with template: {template_slug}[/bold green]"
         )
 
-    extensions = [
-        ext
-        for ext in data.get("extensions", data.get("addons", []))
-        if isinstance(ext, dict)
-    ]
+    extensions = _addon_entries(data, template_slug)
     grouped: dict[str, list[dict[str, Any]]] = {}
     for ext in extensions:
-        ext_types = ext.get("type", [])
-        if isinstance(ext_types, str):
-            ext_types = [ext_types]
-        if template_type and template_type not in ext_types:
-            continue
         slug = str(ext.get("category", "custom"))
         grouped.setdefault(slug, []).append(ext)
 

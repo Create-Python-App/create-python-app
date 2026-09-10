@@ -39,7 +39,18 @@ app = typer.Typer(
     # Keep cache out of this Typer app (routed in main()). A nested command
     # group turns the CLI into Click Group form `[ARGS] COMMAND`, so
     # `cpa my-api --template …` fails with "No such command '--template'".
-    epilog="Cache: create-awesome-python-app cache [list|dir|clean|verify|…]",
+    epilog=(
+        "Cache: create-awesome-python-app cache [list|dir|clean|verify|…]\n"
+        "\n"
+        "Examples:\n"
+        "  uvx create-awesome-python-app@latest my-api\n"
+        "  uvx create-awesome-python-app@latest my-api --template fastapi-starter "
+        "--addons ruff-setup --no-interactive\n"
+        "  uvx create-awesome-python-app@latest my-api --template "
+        "file:///path/to/bank --no-interactive\n"
+        "  create-awesome-python-app --list-templates --json | jq '.templates[].slug'\n"
+        "  create-awesome-python-app --list-templates --category tooling"
+    ),
 )
 cache_app = typer.Typer(help="Inspect and manage the local template cache")
 console = Console(stderr=True)
@@ -85,6 +96,8 @@ _VALUE_TAKING_FLAGS = frozenset(
         "--fixture",
         "--addons",
         "--extend",
+        "--category",
+        "--config",
     }
 )
 
@@ -171,6 +184,32 @@ def _template_config_path(source_subdir: str | None, root: Path) -> Path:
     if not cfg_path.is_file() and source_subdir:
         cfg_path = root / source_subdir / "cpa.config.json"
     return cfg_path
+
+
+def _load_config_defaults(config_path: Path | None) -> dict[str, str]:
+    """Load ``--config`` JSON defaults merged under explicit ``--set`` values.
+
+    The file must be a JSON object; scalar values are stringified so they
+    behave like ``--set key=value`` entries. Explicit ``--set`` wins.
+    """
+    if config_path is None:
+        return {}
+    if not config_path.is_file():
+        console.print(f"[red]--config file not found: {config_path}[/red]")
+        raise typer.Exit(2)
+    import json
+
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as err:
+        console.print(f"[red]Invalid --config file {config_path}: {err}[/red]")
+        raise typer.Exit(2) from err
+    if not isinstance(data, dict):
+        console.print(
+            f"[red]Invalid --config file {config_path}: must be a JSON object[/red]"
+        )
+        raise typer.Exit(2)
+    return {str(key): _stringify_option_value(value) for key, value in data.items()}
 
 
 def _parse_set_options(set_opt: list[str] | None) -> dict[str, str]:
@@ -304,11 +343,29 @@ def scaffold(
     addons: list[str] | None = typer.Option(None, "--addons"),
     extend: list[str] | None = typer.Option(None, "--extend"),
     set_opt: list[str] | None = typer.Option(None, "--set"),
-    no_install: bool = typer.Option(False, "--no-install"),
+    no_install: bool = typer.Option(
+        False, "--no-install", "--skip-install", help="Skip dependency install."
+    ),
     force: bool = typer.Option(False, "--force", "-f"),
     interactive: bool | None = typer.Option(None, "--interactive/--no-interactive"),
     list_templates: bool = typer.Option(False, "--list-templates"),
     list_addons: bool = typer.Option(False, "--list-addons"),
+    category: str | None = typer.Option(
+        None, "--category", help="Filter --list-templates by category slug."
+    ),
+    json_out: bool = typer.Option(
+        False,
+        "--json",
+        help="Machine-readable JSON for --list-templates/--list-addons.",
+    ),
+    config: Path | None = typer.Option(
+        None,
+        "--config",
+        help=(
+            "JSON file of key=value defaults for template customOptions. "
+            "Explicit --set values win over --config entries."
+        ),
+    ),
     offline: bool = typer.Option(False, "--offline"),
     no_cache: bool = typer.Option(False, "--no-cache"),
     cache_dir: Path | None = typer.Option(None, "--cache-dir"),
@@ -337,13 +394,30 @@ def scaffold(
     apply_fixture_mode(fixture)
 
     if list_templates or list_addons:
+        import json
+
+        from create_awesome_python_app.catalog import (
+            CatalogResolutionError,
+            addons_view,
+            templates_view,
+        )
         from create_awesome_python_app.catalog import list_addons as la
         from create_awesome_python_app.catalog import list_templates as lt
 
-        if list_templates:
-            lt()
-        if list_addons:
-            la(template)
+        try:
+            if list_templates:
+                if json_out:
+                    typer.echo(json.dumps(templates_view(category), indent=2))
+                else:
+                    lt(category)
+            if list_addons:
+                if json_out:
+                    typer.echo(json.dumps(addons_view(template), indent=2))
+                else:
+                    la(template)
+        except CatalogResolutionError as err:
+            console.print(f"[red]{err}[/red]")
+            raise typer.Exit(2) from err
         raise typer.Exit(0)
 
     target_directory = project_directory or "my-project"
@@ -427,6 +501,8 @@ def scaffold(
         raise typer.Exit(2)
 
     set_map = _parse_set_options(set_opt)
+    # --config file supplies defaults; explicit --set wins (#271).
+    set_map = {**_load_config_defaults(config), **set_map}
 
     from create_awesome_python_app.catalog import (
         CatalogResolutionError,

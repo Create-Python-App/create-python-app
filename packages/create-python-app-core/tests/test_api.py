@@ -13,6 +13,17 @@ def test_check_python_version_rejects_impossible() -> None:
         check_python_version(">=99.0", "create-python-app-core")
 
 
+def test_check_python_version_message_names_versions_and_hint(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit):
+        check_python_version(">=99.0", "create-python-app-core")
+    err = capsys.readouterr().err
+    assert "requires Python >=99.0" in err
+    assert "uv python install" in err
+    assert ".python-version" in err
+
+
 def test_create_python_app_forwards_refresh(monkeypatch) -> None:
     captured: dict[str, object] = {}
 

@@ -26,9 +26,10 @@ def check_python_version(required: str, package_name: str) -> None:
     current = Version(".".join(map(str, sys.version_info[:3])))
     if current not in SpecifierSet(required):
         print(
-            f"You are running Python {current}.\n"
-            f"{package_name} requires Python {required}.\n"
-            "Please update your version of Python.",
+            f"You are running Python {current}, "
+            f"but {package_name} requires Python {required}.\n"
+            "Install a supported interpreter with `uv python install 3.12` "
+            "or point `.python-version` at one, then retry.",
             file=sys.stderr,
         )
         raise SystemExit(1)
