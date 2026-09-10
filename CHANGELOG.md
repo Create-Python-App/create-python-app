@@ -2,8 +2,6 @@
 
 ## 0.3.0 - 2026-09-10
 
-## Highlights
-
 CLI power batch: machine-readable catalog output, answer files, and friendlier interactive runs.
 
 ### Added
