@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.0 - 2026-09-10
+
+CLI power batch: machine-readable catalog output, answer files, and friendlier interactive runs.
+
+### Added
+
+- `--json` for `--list-templates` / `--list-addons` (jq-parseable contract) (#262)
+- `--skip-install` alias for `--no-install` (#263)
+- `--category <slug>` filter for `--list-templates` (#273)
+- `--config <path>` JSON defaults merged under explicit `--set` (#271)
+- `--help` usage examples (interactive, headless, file:// banks, JSON+jq) (#264)
+- Rich progress spinner around scaffolding on interactive TTYs (#269)
+- `docs/SHELL_COMPLETION.md` for built-in shell completion (#270)
+- `CONTRIBUTING.es.md` Spanish onboarding translation (#265)
+
+### Improved
+
+- Clearer Python-version failure (detected + required + `uv python install` hint) (#266)
+- Integration coverage for `--set` overrides, coercion, and malformed input (#268)
+- Expanded `docs/TROUBLESHOOTING.md` recipes (#272)
+
 ## 0.2.12 - 2026-07-28
 
 ### Packaging
