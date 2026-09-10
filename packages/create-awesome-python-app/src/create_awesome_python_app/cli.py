@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -177,6 +178,21 @@ def apply_fixture_mode(fixture: str | None) -> None:
 
 def _in_ci() -> bool:
     return os.environ.get("CI", "").lower() in {"1", "true", "yes"}
+
+
+def _spinner_enabled(*, interactive: bool) -> bool:
+    """Progress spinner on interactive TTYs only (never CI/pipes/--json)."""
+    return bool(interactive) and sys.stderr.isatty() and not _in_ci()
+
+
+@contextmanager
+def _phase_status(message: str, *, enabled: bool):
+    """Rich status spinner on stderr while a long phase runs (no-op when disabled)."""
+    if not enabled:
+        yield
+        return
+    with console.status(f"[cyan]{message}[/cyan]", spinner="dots"):
+        yield
 
 
 def _template_config_path(source_subdir: str | None, root: Path) -> Path:
@@ -651,25 +667,27 @@ def scaffold(
             raise typer.Exit(1)
         console.print(f"[yellow]{msg}[/yellow]")
 
+    show_progress = _spinner_enabled(interactive=want_interactive)
     try:
-        asyncio.run(
-            create_python_app(
-                target_directory,
-                {
-                    "template": template,
-                    "addons": addons or [],
-                    "extend": extend or [],
-                    "install": not no_install,
-                    "force": force,
-                    "verbose": verbose,
-                    "offline": offline,
-                    "refresh": effective_refresh,
-                    "keep_on_failure": keep_on_failure,
-                    "cache_dir": str(cache_dir) if cache_dir else None,
-                    "set": set_map,
-                },
+        with _phase_status("Scaffolding project…", enabled=show_progress):
+            asyncio.run(
+                create_python_app(
+                    target_directory,
+                    {
+                        "template": template,
+                        "addons": addons or [],
+                        "extend": extend or [],
+                        "install": not no_install,
+                        "force": force,
+                        "verbose": verbose,
+                        "offline": offline,
+                        "refresh": effective_refresh,
+                        "keep_on_failure": keep_on_failure,
+                        "cache_dir": str(cache_dir) if cache_dir else None,
+                        "set": set_map,
+                    },
+                )
             )
-        )
     except NonEmptyTargetDirectoryError as err:
         # Safety net if the target fills up after the early check (e.g. during
         # a long interactive session).
