@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from create_awesome_python_app.cli import app
 from typer.testing import CliRunner
 
 runner = CliRunner()
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -117,9 +119,16 @@ def test_skip_install_alias(
 
 
 def test_skip_install_in_help() -> None:
-    result = runner.invoke(app, ["--help"], env={"COLUMNS": "120"})
+    # Wide COLUMNS avoids Rich truncating option names in CI runners.
+    result = runner.invoke(
+        app,
+        ["--help"],
+        env={"COLUMNS": "120", "TERM": "xterm-256color", "NO_COLOR": "1"},
+    )
     assert result.exit_code == 0
-    assert "--skip-install" in (result.stdout or "")
+    text = _ANSI.sub("", result.stdout or "")
+    assert "--skip-install" in text
+    assert "--no-install" in text
 
 
 def test_set_overrides_happy_path(
