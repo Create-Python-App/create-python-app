@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 - 2026-09-15
+
+Maintenance release: dependency updates (ruff, GitHub Actions) since 0.3.0.
+
 ## 0.3.0 - 2026-09-10
 
 CLI power batch: machine-readable catalog output, answer files, and friendlier interactive runs.
