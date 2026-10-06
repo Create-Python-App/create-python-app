@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2 - 2026-10-06
+
+Maintenance release: packaging, dependency metadata, and release workflow maintenance since 0.3.1. No CLI behavior changes.
+
 ## 0.3.1 - 2026-09-15
 
 Maintenance release: dependency updates (ruff, GitHub Actions) since 0.3.0.
