@@ -203,14 +203,18 @@ jobs:
           set -euo pipefail
           docker run --rm \
             -v "$PWD:/work:rw" \
-            -w /work \
             archlinux:latest \
             bash -euo pipefail -c '
               pacman -Sy --noconfirm --needed pacman-contrib base-devel >/dev/null 2>&1
               useradd -m builder
-              chown -R builder:builder /work
-              runuser -u builder -- makepkg --printsrcinfo > .SRCINFO
-            '
+              mkdir /tmp/build
+              cp /work/PKGBUILD /tmp/build/PKGBUILD
+              chown -R builder:builder /tmp/build
+              # makepkg needs a builder-owned working directory. Do not alter
+              # the runner-owned Git checkout mounted at /work.
+              runuser -u builder -- bash -c "cd /tmp/build && makepkg --printsrcinfo"
+            ' > /tmp/SRCINFO
+          install -m 0644 /tmp/SRCINFO .SRCINFO
 
       - name: Sync updated PKGBUILD to GitHub mirror
         # Keep the aur-package GitHub mirror in sync with what's live
