@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 - 2026-10-11
+
+- Fix AUR metadata generation without changing ownership of the runner checkout.
+
 ## 0.3.2 - 2026-10-06
 
 Maintenance release: packaging, dependency metadata, and release workflow maintenance since 0.3.1. No CLI behavior changes.
